@@ -1,76 +1,168 @@
 package transactions
 
-import "time"
+import (
+	"context"
+	"strconv"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+)
 
 type Repository interface {
-	Create(input CreateTransactionInput) Transaction
-	GetAll() []Transaction
-	GetBalance() float64
-	GetBalanceByAccount() map[int64]float64
+	Create(input CreateTransactionInput) (Transaction, error)
+	GetAll(filters TransactionFilters) ([]Transaction, error)
+	GetBalance() (float64, error)
+	GetBalanceByAccount() (map[int64]float64, error)
 }
 
-type InMemoryRepository struct {
-	data   []Transaction
-	nextID int64
+type PostgresRepository struct {
+	db *pgxpool.Pool
 }
 
-func NewInMemoryRepository() *InMemoryRepository {
-	return &InMemoryRepository{
-		data:   []Transaction{},
-		nextID: 1,
+func NewPostgresRepository(db *pgxpool.Pool) *PostgresRepository {
+	return &PostgresRepository{db: db}
+}
+
+func (r *PostgresRepository) Create(input CreateTransactionInput) (Transaction, error) {
+	var t Transaction
+
+	query := `
+		INSERT INTO transactions (title, amount, type, account_id, category, description)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id, title, amount, type, account_id, category, description, created_at
+	`
+
+	err := r.db.QueryRow(
+		context.Background(),
+		query,
+		input.Title,
+		input.Amount,
+		input.Type,
+		input.AccountID,
+		input.Category,
+		input.Description,
+	).Scan(
+		&t.ID,
+		&t.Title,
+		&t.Amount,
+		&t.Type,
+		&t.AccountID,
+		&t.Category,
+		&t.Description,
+		&t.CreatedAt,
+	)
+
+	return t, err
+}
+
+func (r *PostgresRepository) GetAll(filters TransactionFilters) ([]Transaction, error) {
+	query := `
+		SELECT id, title, amount, type, account_id, category, description, created_at
+		FROM transactions
+		WHERE 1=1
+	`
+
+	args := []interface{}{}
+	argPos := 1
+
+	if filters.AccountID != nil {
+		query += ` AND account_id = $` + strconv.Itoa(argPos)
+		args = append(args, *filters.AccountID)
+		argPos++
 	}
-}
 
-func (r *InMemoryRepository) Create(input CreateTransactionInput) Transaction {
-	transaction := Transaction{
-		ID:          r.nextID,
-		Title:       input.Title,
-		Amount:      input.Amount,
-		Type:        input.Type,
-		AccountID:   input.AccountID,
-		Category:    input.Category,
-		Description: input.Description,
-		CreatedAt:   time.Now(),
+	if filters.Type != nil {
+		query += ` AND type = $` + strconv.Itoa(argPos)
+		args = append(args, *filters.Type)
+		argPos++
 	}
 
-	r.data = append(r.data, transaction)
-	r.nextID++
+	if filters.Category != nil {
+		query += ` AND category = $` + strconv.Itoa(argPos)
+		args = append(args, *filters.Category)
+		argPos++
+	}
 
-	return transaction
+	query += ` ORDER BY id ASC`
+
+	rows, err := r.db.Query(context.Background(), query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var transactions []Transaction
+
+	for rows.Next() {
+		var t Transaction
+		if err := rows.Scan(
+			&t.ID,
+			&t.Title,
+			&t.Amount,
+			&t.Type,
+			&t.AccountID,
+			&t.Category,
+			&t.Description,
+			&t.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		transactions = append(transactions, t)
+	}
+
+	return transactions, rows.Err()
 }
 
-func (r *InMemoryRepository) GetAll() []Transaction {
-	return r.data
-}
+func (r *PostgresRepository) GetBalance() (float64, error) {
+	query := `
+		SELECT COALESCE(SUM(
+			CASE
+				WHEN type = 'income' THEN amount
+				WHEN type = 'expense' THEN -amount
+				ELSE 0
+			END
+		), 0)
+		FROM transactions
+	`
 
-func (r *InMemoryRepository) GetBalance() float64 {
 	var balance float64
-
-	for _, t := range r.data {
-		if t.Type == Income {
-			balance += t.Amount
-		} else if t.Type == Expense {
-			balance -= t.Amount
-		}
-	}
-
-	return balance
+	err := r.db.QueryRow(context.Background(), query).Scan(&balance)
+	return balance, err
 }
 
-func (r *InMemoryRepository) GetBalanceByAccount() map[int64]float64 {
-	balances := make(map[int64]float64)
+func (r *PostgresRepository) GetBalanceByAccount() (map[int64]float64, error) {
+	query := `
+		SELECT
+			account_id,
+			COALESCE(SUM(
+				CASE
+					WHEN type = 'income' THEN amount
+					WHEN type = 'expense' THEN -amount
+					ELSE 0
+				END
+			), 0) AS balance
+		FROM transactions
+		GROUP BY account_id
+		ORDER BY account_id
+	`
 
-	for _, t := range r.data {
-		if _, exists := balances[t.AccountID]; !exists {
-			balances[t.AccountID] = 0
+	rows, err := r.db.Query(context.Background(), query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make(map[int64]float64)
+
+	for rows.Next() {
+		var accountID int64
+		var balance float64
+
+		if err := rows.Scan(&accountID, &balance); err != nil {
+			return nil, err
 		}
 
-		if t.Type == Income {
-			balances[t.AccountID] += t.Amount
-		} else if t.Type == Expense {
-			balances[t.AccountID] -= t.Amount
-		}
+		result[accountID] = balance
 	}
 
-	return balances
+	return result, rows.Err()
 }

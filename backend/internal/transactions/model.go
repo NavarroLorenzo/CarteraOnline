@@ -28,3 +28,9 @@ type CreateTransactionInput struct {
 	Category    string          `json:"category"`
 	Description string          `json:"description"`
 }
+
+type TransactionFilters struct {
+	AccountID *int64
+	Type      *TransactionType
+	Category  *string
+}

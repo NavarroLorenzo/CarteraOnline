@@ -1,14 +1,19 @@
 package main
 
 import (
-	"cartera-app/backend/internal/config"
-	"cartera-app/backend/internal/routes"
 	"log"
+
+	"cartera-app/backend/internal/config"
+	"cartera-app/backend/internal/database"
+	"cartera-app/backend/internal/routes"
 )
 
 func main() {
 	cfg := config.LoadConfig()
-	router := routes.SetupRouter()
+	db := database.NewPool(cfg)
+	defer db.Close()
+
+	router := routes.SetupRouter(db)
 
 	log.Printf("Servidor corriendo en http://localhost:%s", cfg.AppPort)
 
