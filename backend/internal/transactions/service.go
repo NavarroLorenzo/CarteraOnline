@@ -22,6 +22,7 @@ type Service interface {
 	GetAll(filters TransactionFilters) ([]Transaction, error)
 	GetBalance() (float64, error)
 	GetBalanceByAccountDetailed() ([]AccountBalance, float64, error)
+	GetSummary(filters TransactionFilters) (TransactionSummary, error)
 }
 
 type service struct {
@@ -86,4 +87,8 @@ func (s *service) GetBalanceByAccountDetailed() ([]AccountBalance, float64, erro
 	}
 
 	return result, total, nil
+}
+
+func (s *service) GetSummary(filters TransactionFilters) (TransactionSummary, error) {
+	return s.repo.GetSummary(filters)
 }

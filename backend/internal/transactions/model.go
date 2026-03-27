@@ -36,3 +36,10 @@ type TransactionFilters struct {
 	DateFrom  *time.Time
 	DateTo    *time.Time
 }
+
+type TransactionSummary struct {
+	IncomeTotal       float64 `json:"income_total"`
+	ExpenseTotal      float64 `json:"expense_total"`
+	NetBalance        float64 `json:"net_balance"`
+	TransactionsCount int64   `json:"transactions_count"`
+}

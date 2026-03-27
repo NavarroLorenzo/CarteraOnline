@@ -32,6 +32,7 @@ func SetupRouter(db *pgxpool.Pool) *gin.Engine {
 		api.GET("/transactions", transactionHandler.GetAll)
 		api.GET("/transactions/balance", transactionHandler.GetBalance)
 		api.GET("/transactions/balance-by-account", transactionHandler.GetBalanceByAccount)
+		api.GET("/transactions/summary", transactionHandler.GetSummary)
 	}
 
 	return router

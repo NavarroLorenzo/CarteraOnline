@@ -1,10 +1,18 @@
 package transactions
 
 import (
+	"errors"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
+)
+
+var (
+	ErrInvalidAccountID = errors.New("account_id debe ser numérico")
+	ErrInvalidType      = errors.New("type debe ser income o expense")
+	ErrInvalidDateFrom  = errors.New("date_from debe tener formato YYYY-MM-DD")
+	ErrInvalidDateTo    = errors.New("date_to debe tener formato YYYY-MM-DD")
 )
 
 type Handler struct {
@@ -40,61 +48,10 @@ func (h *Handler) Create(c *gin.Context) {
 }
 
 func (h *Handler) GetAll(c *gin.Context) {
-	var filters TransactionFilters
-
-	if accountIDStr := c.Query("account_id"); accountIDStr != "" {
-		accountID, err := strconv.ParseInt(accountIDStr, 10, 64)
-		if err != nil {
-			c.JSON(400, gin.H{
-				"error": "account_id debe ser numérico",
-			})
-			return
-		}
-		filters.AccountID = &accountID
-	}
-
-	if typeStr := c.Query("type"); typeStr != "" {
-		transactionType := TransactionType(typeStr)
-
-		if transactionType != Income && transactionType != Expense {
-			c.JSON(400, gin.H{
-				"error": "type debe ser income o expense",
-			})
-			return
-		}
-
-		filters.Type = &transactionType
-	}
-
-	if categoryStr := c.Query("category"); categoryStr != "" {
-		filters.Category = &categoryStr
-	}
-
-	// 🔥 NUEVO: date_from
-	if dateFromStr := c.Query("date_from"); dateFromStr != "" {
-		dateFrom, err := time.Parse("2006-01-02", dateFromStr)
-		if err != nil {
-			c.JSON(400, gin.H{
-				"error": "date_from debe tener formato YYYY-MM-DD",
-			})
-			return
-		}
-		filters.DateFrom = &dateFrom
-	}
-
-	// 🔥 NUEVO: date_to
-	if dateToStr := c.Query("date_to"); dateToStr != "" {
-		dateTo, err := time.Parse("2006-01-02", dateToStr)
-		if err != nil {
-			c.JSON(400, gin.H{
-				"error": "date_to debe tener formato YYYY-MM-DD",
-			})
-			return
-		}
-
-		// incluimos todo el día hasta las 23:59:59
-		dateTo = dateTo.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
-		filters.DateTo = &dateTo
+	filters, err := buildTransactionFilters(c)
+	if err != nil {
+		h.handleFilterError(c, err)
+		return
 	}
 
 	transactions, err := h.service.GetAll(filters)
@@ -129,4 +86,83 @@ func (h *Handler) GetBalanceByAccount(c *gin.Context) {
 		"accounts": accounts,
 		"total":    total,
 	})
+}
+
+func buildTransactionFilters(c *gin.Context) (TransactionFilters, error) {
+	var filters TransactionFilters
+
+	if accountIDStr := c.Query("account_id"); accountIDStr != "" {
+		accountID, err := strconv.ParseInt(accountIDStr, 10, 64)
+		if err != nil {
+			return filters, ErrInvalidAccountID
+		}
+		filters.AccountID = &accountID
+	}
+
+	if typeStr := c.Query("type"); typeStr != "" {
+		transactionType := TransactionType(typeStr)
+
+		if transactionType != Income && transactionType != Expense {
+			return filters, ErrInvalidType
+		}
+
+		filters.Type = &transactionType
+	}
+
+	if categoryStr := c.Query("category"); categoryStr != "" {
+		filters.Category = &categoryStr
+	}
+
+	if dateFromStr := c.Query("date_from"); dateFromStr != "" {
+		dateFrom, err := time.Parse("2006-01-02", dateFromStr)
+		if err != nil {
+			return filters, ErrInvalidDateFrom
+		}
+		filters.DateFrom = &dateFrom
+	}
+
+	if dateToStr := c.Query("date_to"); dateToStr != "" {
+		dateTo, err := time.Parse("2006-01-02", dateToStr)
+		if err != nil {
+			return filters, ErrInvalidDateTo
+		}
+
+		dateTo = dateTo.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
+		filters.DateTo = &dateTo
+	}
+
+	return filters, nil
+}
+
+func (h *Handler) handleFilterError(c *gin.Context, err error) {
+	switch err {
+	case ErrInvalidAccountID:
+		c.JSON(400, gin.H{"error": ErrInvalidAccountID.Error()})
+	case ErrInvalidType:
+		c.JSON(400, gin.H{"error": ErrInvalidType.Error()})
+	case ErrInvalidDateFrom:
+		c.JSON(400, gin.H{"error": ErrInvalidDateFrom.Error()})
+	case ErrInvalidDateTo:
+		c.JSON(400, gin.H{"error": ErrInvalidDateTo.Error()})
+	default:
+		c.JSON(400, gin.H{"error": "Filtros inválidos"})
+	}
+}
+
+func (h *Handler) GetSummary(c *gin.Context) {
+	filters, err := buildTransactionFilters(c)
+	if err != nil {
+		h.handleFilterError(c, err)
+		return
+	}
+
+	summary, err := h.service.GetSummary(filters)
+	if err != nil {
+		c.JSON(500, gin.H{
+			"error": "No se pudo obtener el resumen de transacciones",
+		})
+		return
+	}
+
+	c.JSON(200, summary)
 }

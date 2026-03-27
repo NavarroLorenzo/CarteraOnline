@@ -12,6 +12,7 @@ type Repository interface {
 	GetAll(filters TransactionFilters) ([]Transaction, error)
 	GetBalance() (float64, error)
 	GetBalanceByAccount() (map[int64]float64, error)
+	GetSummary(filters TransactionFilters) (TransactionSummary, error)
 }
 
 type PostgresRepository struct {
@@ -177,4 +178,64 @@ func (r *PostgresRepository) GetBalanceByAccount() (map[int64]float64, error) {
 	}
 
 	return result, rows.Err()
+}
+
+func (r *PostgresRepository) GetSummary(filters TransactionFilters) (TransactionSummary, error) {
+	query := `
+		SELECT
+			COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) AS income_total,
+			COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) AS expense_total,
+			COALESCE(SUM(CASE
+				WHEN type = 'income' THEN amount
+				WHEN type = 'expense' THEN -amount
+				ELSE 0
+			END), 0) AS net_balance,
+			COUNT(*) AS transactions_count
+		FROM transactions
+		WHERE 1=1
+	`
+
+	args := []interface{}{}
+	argPos := 1
+
+	if filters.AccountID != nil {
+		query += ` AND account_id = $` + strconv.Itoa(argPos)
+		args = append(args, *filters.AccountID)
+		argPos++
+	}
+
+	if filters.Type != nil {
+		query += ` AND type = $` + strconv.Itoa(argPos)
+		args = append(args, *filters.Type)
+		argPos++
+	}
+
+	if filters.Category != nil {
+		query += ` AND category = $` + strconv.Itoa(argPos)
+		args = append(args, *filters.Category)
+		argPos++
+	}
+
+	if filters.DateFrom != nil {
+		query += ` AND created_at >= $` + strconv.Itoa(argPos)
+		args = append(args, *filters.DateFrom)
+		argPos++
+	}
+
+	if filters.DateTo != nil {
+		query += ` AND created_at <= $` + strconv.Itoa(argPos)
+		args = append(args, *filters.DateTo)
+		argPos++
+	}
+
+	var summary TransactionSummary
+
+	err := r.db.QueryRow(context.Background(), query, args...).Scan(
+		&summary.IncomeTotal,
+		&summary.ExpenseTotal,
+		&summary.NetBalance,
+		&summary.TransactionsCount,
+	)
+
+	return summary, err
 }
