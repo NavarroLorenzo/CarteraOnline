@@ -17,6 +17,7 @@ type Transaction struct {
 	AccountID   int64           `json:"account_id"`
 	Category    string          `json:"category"`
 	Description string          `json:"description"`
+	TransferID  *string         `json:"transfer_id,omitempty"`
 	CreatedAt   time.Time       `json:"created_at"`
 }
 
@@ -27,6 +28,7 @@ type CreateTransactionInput struct {
 	AccountID   int64           `json:"account_id" binding:"required"`
 	Category    string          `json:"category"`
 	Description string          `json:"description"`
+	TransferID  *string         `json:"transfer_id,omitempty"`
 }
 
 type TransactionFilters struct {
@@ -42,4 +44,13 @@ type TransactionSummary struct {
 	ExpenseTotal      float64 `json:"expense_total"`
 	NetBalance        float64 `json:"net_balance"`
 	TransactionsCount int64   `json:"transactions_count"`
+}
+
+type UpdateTransactionInput struct {
+	Title       string          `json:"title" binding:"required"`
+	Amount      float64         `json:"amount" binding:"required,gt=0"`
+	Type        TransactionType `json:"type" binding:"required,oneof=income expense"`
+	AccountID   int64           `json:"account_id" binding:"required"`
+	Category    string          `json:"category"`
+	Description string          `json:"description"`
 }

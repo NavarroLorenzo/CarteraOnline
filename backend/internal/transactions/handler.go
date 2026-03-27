@@ -166,3 +166,81 @@ func (h *Handler) GetSummary(c *gin.Context) {
 
 	c.JSON(200, summary)
 }
+
+func (h *Handler) GetByID(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "id inválido"})
+		return
+	}
+
+	transaction, err := h.service.GetByID(id)
+	if err != nil {
+		switch err {
+		case ErrTransactionNotFound:
+			c.JSON(404, gin.H{"error": err.Error()})
+		default:
+			c.JSON(500, gin.H{"error": "No se pudo obtener la transacción"})
+		}
+		return
+	}
+
+	c.JSON(200, transaction)
+}
+
+func (h *Handler) Update(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "id inválido"})
+		return
+	}
+
+	var input UpdateTransactionInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(400, gin.H{
+			"error":   "Datos inválidos",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	transaction, err := h.service.Update(id, input)
+	if err != nil {
+		switch err {
+		case ErrTransactionNotFound:
+			c.JSON(404, gin.H{"error": err.Error()})
+		case ErrAccountNotFound:
+			c.JSON(400, gin.H{"error": "La cuenta indicada no existe"})
+		case ErrCannotUpdateTransfer:
+			c.JSON(400, gin.H{"error": err.Error()})
+		default:
+			c.JSON(500, gin.H{"error": "No se pudo actualizar la transacción"})
+		}
+		return
+	}
+
+	c.JSON(200, transaction)
+}
+
+func (h *Handler) Delete(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "id inválido"})
+		return
+	}
+
+	err = h.service.Delete(id)
+	if err != nil {
+		switch err {
+		case ErrTransactionNotFound:
+			c.JSON(404, gin.H{"error": err.Error()})
+		default:
+			c.JSON(500, gin.H{"error": "No se pudo eliminar la transacción"})
+		}
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"message": "Transacción eliminada correctamente",
+	})
+}

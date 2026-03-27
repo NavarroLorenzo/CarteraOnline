@@ -10,6 +10,7 @@ type Account struct {
 }
 
 type CreateAccountInput struct {
-	Name string `json:"name" binding:"required"`
-	Type string `json:"type" binding:"required"`
+	Name          string  `json:"name" binding:"required"`
+	Type          string  `json:"type" binding:"required"`
+	InitialAmount float64 `json:"initial_amount"`
 }

@@ -2,12 +2,20 @@ package accounts
 
 import "github.com/gin-gonic/gin"
 
-type Handler struct {
-	service Service
+type InitialBalanceCreator interface {
+	CreateInitialBalance(accountID int64, amount float64) error
 }
 
-func NewHandler(service Service) *Handler {
-	return &Handler{service: service}
+type Handler struct {
+	service               Service
+	initialBalanceCreator InitialBalanceCreator
+}
+
+func NewHandler(service Service, initialBalanceCreator InitialBalanceCreator) *Handler {
+	return &Handler{
+		service:               service,
+		initialBalanceCreator: initialBalanceCreator,
+	}
 }
 
 func (h *Handler) Create(c *gin.Context) {
@@ -21,10 +29,23 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	account, err := h.service.Create(input)
+	account, err := h.service.Create(CreateAccountInput{
+		Name: input.Name,
+		Type: input.Type,
+	})
 	if err != nil {
 		c.JSON(500, gin.H{"error": "No se pudo crear la cuenta"})
 		return
+	}
+
+	if input.InitialAmount > 0 {
+		err = h.initialBalanceCreator.CreateInitialBalance(account.ID, input.InitialAmount)
+		if err != nil {
+			c.JSON(500, gin.H{
+				"error": "La cuenta se creó, pero falló la carga del saldo inicial",
+			})
+			return
+		}
 	}
 
 	c.JSON(201, account)

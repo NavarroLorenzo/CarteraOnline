@@ -10,6 +10,10 @@ import (
 type Repository interface {
 	Create(input CreateTransactionInput) (Transaction, error)
 	GetAll(filters TransactionFilters) ([]Transaction, error)
+	GetByID(id int64) (Transaction, bool, error)
+	Update(id int64, input UpdateTransactionInput) (Transaction, error)
+	Delete(id int64) error
+	DeleteByTransferID(transferID string) error
 	GetBalance() (float64, error)
 	GetBalanceByAccount() (map[int64]float64, error)
 	GetSummary(filters TransactionFilters) (TransactionSummary, error)
@@ -27,11 +31,10 @@ func (r *PostgresRepository) Create(input CreateTransactionInput) (Transaction, 
 	var t Transaction
 
 	query := `
-		INSERT INTO transactions (title, amount, type, account_id, category, description)
-		VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING id, title, amount, type, account_id, category, description, created_at
+			INSERT INTO transactions (title, amount, type, account_id, category, description, transfer_id)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)
+			RETURNING id, title, amount, type, account_id, category, description, transfer_id, created_at
 	`
-
 	err := r.db.QueryRow(
 		context.Background(),
 		query,
@@ -41,6 +44,7 @@ func (r *PostgresRepository) Create(input CreateTransactionInput) (Transaction, 
 		input.AccountID,
 		input.Category,
 		input.Description,
+		input.TransferID,
 	).Scan(
 		&t.ID,
 		&t.Title,
@@ -49,6 +53,7 @@ func (r *PostgresRepository) Create(input CreateTransactionInput) (Transaction, 
 		&t.AccountID,
 		&t.Category,
 		&t.Description,
+		&t.TransferID,
 		&t.CreatedAt,
 	)
 
@@ -57,7 +62,7 @@ func (r *PostgresRepository) Create(input CreateTransactionInput) (Transaction, 
 
 func (r *PostgresRepository) GetAll(filters TransactionFilters) ([]Transaction, error) {
 	query := `
-		SELECT id, title, amount, type, account_id, category, description, created_at
+		SELECT id, title, amount, type, account_id, category, description, transfer_id, created_at
 		FROM transactions
 		WHERE 1=1
 	`
@@ -115,6 +120,7 @@ func (r *PostgresRepository) GetAll(filters TransactionFilters) ([]Transaction, 
 			&t.AccountID,
 			&t.Category,
 			&t.Description,
+			&t.TransferID,
 			&t.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -238,4 +244,87 @@ func (r *PostgresRepository) GetSummary(filters TransactionFilters) (Transaction
 	)
 
 	return summary, err
+}
+
+func (r *PostgresRepository) GetByID(id int64) (Transaction, bool, error) {
+	query := `
+		SELECT id, title, amount, type, account_id, category, description, transfer_id, created_at
+		FROM transactions
+		WHERE id = $1
+	`
+
+	var t Transaction
+
+	err := r.db.QueryRow(context.Background(), query, id).Scan(
+		&t.ID,
+		&t.Title,
+		&t.Amount,
+		&t.Type,
+		&t.AccountID,
+		&t.Category,
+		&t.Description,
+		&t.TransferID,
+		&t.CreatedAt,
+	)
+
+	if err != nil {
+		if err.Error() == "no rows in result set" {
+			return Transaction{}, false, nil
+		}
+		return Transaction{}, false, err
+	}
+
+	return t, true, nil
+}
+
+func (r *PostgresRepository) Update(id int64, input UpdateTransactionInput) (Transaction, error) {
+	query := `
+		UPDATE transactions
+		SET title = $1,
+			amount = $2,
+			type = $3,
+			account_id = $4,
+			category = $5,
+			description = $6
+		WHERE id = $7
+		RETURNING id, title, amount, type, account_id, category, description, transfer_id, created_at
+	`
+
+	var t Transaction
+
+	err := r.db.QueryRow(
+		context.Background(),
+		query,
+		input.Title,
+		input.Amount,
+		input.Type,
+		input.AccountID,
+		input.Category,
+		input.Description,
+		id,
+	).Scan(
+		&t.ID,
+		&t.Title,
+		&t.Amount,
+		&t.Type,
+		&t.AccountID,
+		&t.Category,
+		&t.Description,
+		&t.TransferID,
+		&t.CreatedAt,
+	)
+
+	return t, err
+}
+
+func (r *PostgresRepository) Delete(id int64) error {
+	query := `DELETE FROM transactions WHERE id = $1`
+	_, err := r.db.Exec(context.Background(), query, id)
+	return err
+}
+
+func (r *PostgresRepository) DeleteByTransferID(transferID string) error {
+	query := `DELETE FROM transactions WHERE transfer_id = $1`
+	_, err := r.db.Exec(context.Background(), query, transferID)
+	return err
 }
