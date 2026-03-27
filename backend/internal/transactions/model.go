@@ -33,4 +33,6 @@ type TransactionFilters struct {
 	AccountID *int64
 	Type      *TransactionType
 	Category  *string
+	DateFrom  *time.Time
+	DateTo    *time.Time
 }

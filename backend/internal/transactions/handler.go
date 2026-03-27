@@ -2,6 +2,7 @@ package transactions
 
 import (
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -67,6 +68,33 @@ func (h *Handler) GetAll(c *gin.Context) {
 
 	if categoryStr := c.Query("category"); categoryStr != "" {
 		filters.Category = &categoryStr
+	}
+
+	// 🔥 NUEVO: date_from
+	if dateFromStr := c.Query("date_from"); dateFromStr != "" {
+		dateFrom, err := time.Parse("2006-01-02", dateFromStr)
+		if err != nil {
+			c.JSON(400, gin.H{
+				"error": "date_from debe tener formato YYYY-MM-DD",
+			})
+			return
+		}
+		filters.DateFrom = &dateFrom
+	}
+
+	// 🔥 NUEVO: date_to
+	if dateToStr := c.Query("date_to"); dateToStr != "" {
+		dateTo, err := time.Parse("2006-01-02", dateToStr)
+		if err != nil {
+			c.JSON(400, gin.H{
+				"error": "date_to debe tener formato YYYY-MM-DD",
+			})
+			return
+		}
+
+		// incluimos todo el día hasta las 23:59:59
+		dateTo = dateTo.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
+		filters.DateTo = &dateTo
 	}
 
 	transactions, err := h.service.GetAll(filters)

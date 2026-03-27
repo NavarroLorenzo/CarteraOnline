@@ -82,6 +82,18 @@ func (r *PostgresRepository) GetAll(filters TransactionFilters) ([]Transaction, 
 		argPos++
 	}
 
+	if filters.DateFrom != nil {
+		query += ` AND created_at >= $` + strconv.Itoa(argPos)
+		args = append(args, *filters.DateFrom)
+		argPos++
+	}
+
+	if filters.DateTo != nil {
+		query += ` AND created_at <= $` + strconv.Itoa(argPos)
+		args = append(args, *filters.DateTo)
+		argPos++
+	}
+
 	query += ` ORDER BY id ASC`
 
 	rows, err := r.db.Query(context.Background(), query, args...)
