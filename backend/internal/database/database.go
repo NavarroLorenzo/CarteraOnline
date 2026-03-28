@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"cartera-app/backend/internal/config"
@@ -12,15 +13,8 @@ import (
 )
 
 func NewPool(cfg *config.Config) *pgxpool.Pool {
-	dsn := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
-		cfg.DBUser,
-		cfg.DBPassword,
-		cfg.DBHost,
-		cfg.DBPort,
-		cfg.DBName,
-		cfg.DBSSLMode,
-	)
+	dsn, source := buildDSN(cfg)
+	log.Printf("Inicializando PostgreSQL usando %s", source)
 
 	poolConfig, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
@@ -45,6 +39,24 @@ func NewPool(cfg *config.Config) *pgxpool.Pool {
 
 	log.Println("Conexión a PostgreSQL OK")
 	return pool
+}
+
+func buildDSN(cfg *config.Config) (string, string) {
+	if databaseURL := strings.TrimSpace(cfg.DatabaseURL); databaseURL != "" {
+		return databaseURL, "DATABASE_URL"
+	}
+
+	dsn := fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		cfg.DBUser,
+		cfg.DBPassword,
+		cfg.DBHost,
+		cfg.DBPort,
+		cfg.DBName,
+		cfg.DBSSLMode,
+	)
+
+	return dsn, "variables DB_HOST/DB_PORT/DB_USER/DB_PASSWORD/DB_NAME/DB_SSLMODE"
 }
 
 func ensureSchema(pool *pgxpool.Pool) error {

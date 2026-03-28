@@ -15,7 +15,7 @@ func main() {
 
 	router := routes.SetupRouter(db, cfg)
 
-	log.Printf("Servidor corriendo en http://localhost:%s", cfg.AppPort)
+	log.Printf("Servidor levantado en el puerto %s", cfg.AppPort)
 
 	if err := router.Run(":" + cfg.AppPort); err != nil {
 		log.Fatal("No se pudo iniciar el servidor: ", err)
