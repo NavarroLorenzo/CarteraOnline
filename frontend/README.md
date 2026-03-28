@@ -19,8 +19,20 @@ Valores por defecto:
 
 ```env
 VITE_API_BASE_URL=/api
-VITE_API_PROXY_TARGET=http://localhost:8080
+VITE_API_PROXY_TARGET=
 VITE_PORT=5173
+```
+
+Para desarrollo local, si querés usar proxy de Vite, definí también:
+
+```env
+VITE_API_PROXY_TARGET=http://localhost:8080
+```
+
+Para producción en Cloudflare Pages, configurá en el dashboard:
+
+```env
+VITE_API_BASE_URL=https://api.tudominio.com/api
 ```
 
 ## Desarrollo
@@ -45,4 +57,17 @@ Con la configuración por defecto:
 - frontend: `http://localhost:5173`
 - backend: `http://localhost:8080`
 
-El frontend usa proxy de Vite para `/api`, así evitás problemas de CORS en desarrollo.
+Si definís `VITE_API_PROXY_TARGET`, el frontend usa proxy de Vite para `/api` y evitás problemas de CORS en desarrollo.
+
+## Producción
+
+Si publicás el frontend en Cloudflare Pages y el backend en otro dominio, necesitás:
+
+- `VITE_API_BASE_URL` apuntando al backend productivo
+- `CORS_ALLOWED_ORIGINS` en el backend con el dominio del frontend
+
+Ejemplo:
+
+```env
+CORS_ALLOWED_ORIGINS=https://tu-proyecto.pages.dev,https://tudominio.com,https://www.tudominio.com
+```

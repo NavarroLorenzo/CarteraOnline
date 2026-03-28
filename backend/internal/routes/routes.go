@@ -4,8 +4,10 @@ import (
 	"cartera-app/backend/internal/accounts"
 	"cartera-app/backend/internal/auth"
 	"cartera-app/backend/internal/config"
+	"cartera-app/backend/internal/shared/httpmiddleware"
 	"cartera-app/backend/internal/transactions"
 	"cartera-app/backend/internal/transfers"
+	"log"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -14,6 +16,10 @@ import (
 
 func SetupRouter(db *pgxpool.Pool, cfg *config.Config) *gin.Engine {
 	router := gin.Default()
+	if err := router.SetTrustedProxies(nil); err != nil {
+		log.Printf("No se pudo configurar trusted proxies: %v", err)
+	}
+	router.Use(httpmiddleware.CORS(cfg))
 
 	api := router.Group("/api")
 	{
