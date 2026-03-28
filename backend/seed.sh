@@ -1,6 +1,6 @@
 #!/bin/bash
 
-AUTH_PAYLOAD='{"email":"demo@cartera.local","username":"demo","password":"123456"}'
+AUTH_PAYLOAD='{"email":"demo@cartera.local","username":"demo","password":"12345678"}'
 
 REGISTER_RESPONSE=$(curl -s -X POST http://localhost:8080/api/auth/register \
 -H "Content-Type: application/json" \
@@ -11,7 +11,7 @@ TOKEN=$(printf '%s' "$REGISTER_RESPONSE" | sed -n 's/.*"token":"\([^"]*\)".*/\1/
 if [ -z "$TOKEN" ]; then
   LOGIN_RESPONSE=$(curl -s -X POST http://localhost:8080/api/auth/login \
 -H "Content-Type: application/json" \
--d '{"identifier":"demo","password":"123456"}')
+-d '{"identifier":"demo","password":"12345678"}')
   TOKEN=$(printf '%s' "$LOGIN_RESPONSE" | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
 fi
 

@@ -31,11 +31,11 @@ func (r *PostgresRepository) Create(email, username, passwordHash string) (User,
 	query := `
 		INSERT INTO users (email, username, password_hash)
 		VALUES ($1, $2, $3)
-		RETURNING id, email, username, created_at
+		RETURNING id, email, username, email_verified_at, created_at
 	`
 
 	err := r.db.QueryRow(context.Background(), query, email, username, passwordHash).
-		Scan(&user.ID, &user.Email, &user.Username, &user.CreatedAt)
+		Scan(&user.ID, &user.Email, &user.Username, &user.EmailVerifiedAt, &user.CreatedAt)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
@@ -65,13 +65,13 @@ func (r *PostgresRepository) GetByID(id int64) (User, bool, error) {
 	var user User
 
 	query := `
-		SELECT id, email, username, created_at
+		SELECT id, email, username, email_verified_at, created_at
 		FROM users
 		WHERE id = $1
 	`
 
 	err := r.db.QueryRow(context.Background(), query, id).
-		Scan(&user.ID, &user.Email, &user.Username, &user.CreatedAt)
+		Scan(&user.ID, &user.Email, &user.Username, &user.EmailVerifiedAt, &user.CreatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return User{}, false, nil
@@ -87,13 +87,20 @@ func (r *PostgresRepository) GetByIdentifier(identifier string) (userRecord, boo
 	var record userRecord
 
 	query := `
-		SELECT id, email, username, password_hash, created_at
+		SELECT id, email, username, password_hash, email_verified_at, created_at
 		FROM users
 		WHERE email = $1 OR username = $1
 	`
 
 	err := r.db.QueryRow(context.Background(), query, identifier).
-		Scan(&record.ID, &record.Email, &record.Username, &record.PasswordHash, &record.CreatedAt)
+		Scan(
+			&record.ID,
+			&record.Email,
+			&record.Username,
+			&record.PasswordHash,
+			&record.EmailVerifiedAt,
+			&record.CreatedAt,
+		)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return userRecord{}, false, nil

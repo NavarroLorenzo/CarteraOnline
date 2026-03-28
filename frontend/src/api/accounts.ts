@@ -10,6 +10,7 @@ export type CreateAccountPayload = {
 export type UpdateAccountPayload = {
   name: string;
   type: string;
+  is_active?: boolean;
 };
 
 export const accountsApi = {

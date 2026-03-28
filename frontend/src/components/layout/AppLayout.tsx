@@ -32,8 +32,8 @@ export function AppLayout() {
           </button>
 
           <div className="topbar__copy">
-            <span className="eyebrow">Workspace personal</span>
-            <h2>Solo estás viendo tus datos</h2>
+            <span className="eyebrow">Espacio personal</span>
+            <h2>Solo estás viendo tus propios datos</h2>
           </div>
 
           <button type="button" className="ghost-button" onClick={logout}>

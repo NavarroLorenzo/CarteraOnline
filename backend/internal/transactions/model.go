@@ -9,6 +9,9 @@ const (
 	Expense TransactionType = "expense"
 )
 
+const InitialBalanceCategory = "initial_balance"
+const TransferCategory = "transfer"
+
 type Transaction struct {
 	ID          int64           `json:"id"`
 	UserID      int64           `json:"-"`

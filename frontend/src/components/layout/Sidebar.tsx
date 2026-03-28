@@ -40,7 +40,7 @@ export function Sidebar({ username, email, onNavigate }: SidebarProps) {
       </nav>
 
       <div className="sidebar__profile">
-        <span className="sidebar__eyebrow">Sesión activa</span>
+        <span className="sidebar__eyebrow">Sesión iniciada</span>
         <strong>{username}</strong>
         <p>{email}</p>
       </div>

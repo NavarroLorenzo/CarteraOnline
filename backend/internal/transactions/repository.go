@@ -104,7 +104,7 @@ func (r *PostgresRepository) GetAll(userID int64, filters TransactionFilters) ([
 		argPos++
 	}
 
-	query += ` ORDER BY id ASC`
+	query += ` ORDER BY created_at DESC, id DESC`
 
 	rows, err := r.db.Query(context.Background(), query, args...)
 	if err != nil {

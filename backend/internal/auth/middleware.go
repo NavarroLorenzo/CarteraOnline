@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"cartera-app/backend/internal/shared/httpjson"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -12,7 +13,7 @@ func RequireAuth(tokenManager *TokenManager) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := strings.TrimSpace(c.GetHeader("Authorization"))
 		if !strings.HasPrefix(authHeader, "Bearer ") {
-			c.JSON(401, gin.H{"error": "Autenticación requerida"})
+			httpjson.Error(c, 401, "unauthorized", "Autenticación requerida")
 			c.Abort()
 			return
 		}
@@ -20,7 +21,7 @@ func RequireAuth(tokenManager *TokenManager) gin.HandlerFunc {
 		token := strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
 		userID, err := tokenManager.Parse(token)
 		if err != nil {
-			c.JSON(401, gin.H{"error": "Token inválido o vencido"})
+			httpjson.Error(c, 401, "invalid_token", "Token inválido o vencido")
 			c.Abort()
 			return
 		}
@@ -43,7 +44,7 @@ func GetAuthenticatedUserID(c *gin.Context) (int64, bool) {
 func AbortIfUnauthenticated(c *gin.Context) (int64, bool) {
 	userID, ok := GetAuthenticatedUserID(c)
 	if !ok {
-		c.JSON(401, gin.H{"error": "Autenticación requerida"})
+		httpjson.Error(c, 401, "unauthorized", "Autenticación requerida")
 		c.Abort()
 		return 0, false
 	}

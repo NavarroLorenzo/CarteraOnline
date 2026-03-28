@@ -71,10 +71,9 @@ export function DashboardPage() {
       <section className="hero-card">
         <div>
           <span className="eyebrow">Dashboard</span>
-          <h1>Un vistazo rápido a tu cartera</h1>
+          <h1>Tu panorama financiero de hoy</h1>
           <p>
-            Este panel solo lee resultados de la API: resumen, balances por cuenta y movimientos
-            recientes.
+            Revisá el balance total, el resultado de tus movimientos y la actividad reciente de cada cuenta.
           </p>
         </div>
       </section>
@@ -123,7 +122,7 @@ export function DashboardPage() {
                 <div key={account.id} className="list-row">
                   <div>
                     <strong>{account.name}</strong>
-                    <p>ID cuenta: {account.id}</p>
+                    <p>Cuenta #{account.id}</p>
                   </div>
                   <strong>{formatCurrency(account.balance)}</strong>
                 </div>
@@ -169,15 +168,15 @@ export function DashboardPage() {
       <section className="panel">
         <div className="panel-heading">
           <div>
-            <span className="eyebrow">Inventario</span>
-            <h2>Cuentas registradas</h2>
+            <span className="eyebrow">Vista general</span>
+            <h2>Cuentas disponibles</h2>
           </div>
         </div>
 
         {accounts.length === 0 ? (
           <EmptyState
             title="No hay cuentas para mostrar"
-            description="Creá una cuenta nueva para empezar a trabajar con el dashboard."
+            description="Creá una cuenta nueva para empezar a ver tu cartera resumida acá."
           />
         ) : (
           <div className="pill-list">

@@ -132,8 +132,8 @@ export function TransactionsPage() {
       <section className="page-header">
         <div>
           <span className="eyebrow">Transacciones</span>
-          <h1>Cargar y consultar movimientos</h1>
-          <p>Alta básica, filtros por query string y eliminación directa contra tu API.</p>
+          <h1>Registrá y consultá tus movimientos</h1>
+          <p>Guardá ingresos y gastos, filtralos por cuenta o fecha y revisá tu historial cuando lo necesites.</p>
         </div>
       </section>
 
@@ -142,7 +142,7 @@ export function TransactionsPage() {
           <div className="panel-heading">
             <div>
               <span className="eyebrow">Nueva transacción</span>
-              <h2>Formulario</h2>
+              <h2>Cargar movimiento</h2>
             </div>
           </div>
 
@@ -153,7 +153,7 @@ export function TransactionsPage() {
                 type="text"
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
-                placeholder="Cobro cliente"
+                placeholder="Sueldo de marzo"
                 required
               />
             </label>
@@ -203,7 +203,7 @@ export function TransactionsPage() {
                 type="text"
                 value={category}
                 onChange={(event) => setCategory(event.target.value)}
-                placeholder="ventas"
+                placeholder="supermercado"
               />
             </label>
 
@@ -213,7 +213,7 @@ export function TransactionsPage() {
                 rows={4}
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
-                placeholder="Notas opcionales"
+                placeholder="Observaciones opcionales"
               />
             </label>
 
@@ -225,7 +225,7 @@ export function TransactionsPage() {
               className="primary-button"
               disabled={submitting || accounts.length === 0}
             >
-              {submitting ? "Guardando..." : "Crear transacción"}
+              {submitting ? "Guardando..." : "Guardar movimiento"}
             </button>
           </form>
         </article>
@@ -233,8 +233,8 @@ export function TransactionsPage() {
         <article className="panel">
           <div className="panel-heading">
             <div>
-              <span className="eyebrow">Consulta</span>
-              <h2>Listado y filtros</h2>
+              <span className="eyebrow">Historial</span>
+              <h2>Movimientos y filtros</h2>
             </div>
           </div>
 
@@ -350,7 +350,7 @@ export function TransactionsPage() {
           ) : orderedTransactions.length === 0 ? (
             <EmptyState
               title="No hay resultados"
-              description="Probá cambiando filtros o creando una nueva transacción."
+              description="Probá ajustando los filtros o registrando un movimiento nuevo."
             />
           ) : (
             <div className="stack-list">

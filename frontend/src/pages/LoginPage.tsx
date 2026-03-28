@@ -36,24 +36,24 @@ export function LoginPage() {
   return (
     <div className="auth-shell">
       <section className="auth-panel auth-panel--hero">
-        <span className="eyebrow">Control total</span>
-        <h1>Entrá a tu cartera y seguí solo tus movimientos.</h1>
+        <span className="eyebrow">Finanzas en orden</span>
+        <h1>Entrá y retomá el control de tu dinero.</h1>
         <p>
-          El frontend consume tu API con JWT y deja cada sesión encerrada en su propio espacio.
+          Accedé a tus cuentas, movimientos y transferencias desde un solo lugar, con tu sesión protegida.
         </p>
 
         <div className="auth-hero__stats">
           <div>
-            <strong>JWT</strong>
-            <span>Persistencia en localStorage</span>
+            <strong>Sesión segura</strong>
+            <span>Acceso protegido con token</span>
           </div>
           <div>
-            <strong>React Router</strong>
-            <span>Rutas públicas y privadas</span>
+            <strong>Tu espacio</strong>
+            <span>Cada usuario ve solo lo suyo</span>
           </div>
           <div>
-            <strong>API central</strong>
-            <span>Base URL configurable</span>
+            <strong>Todo conectado</strong>
+            <span>Cuentas, movimientos y transferencias</span>
           </div>
         </div>
       </section>
@@ -62,7 +62,7 @@ export function LoginPage() {
         <div className="panel-heading">
           <span className="eyebrow">Login</span>
           <h2>Bienvenido de nuevo</h2>
-          <p>Podés entrar con email o usuario.</p>
+          <p>Podés ingresar con tu email o con tu nombre de usuario.</p>
         </div>
 
         <form className="stack-form" onSubmit={handleSubmit}>

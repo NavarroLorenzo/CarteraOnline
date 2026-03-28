@@ -92,7 +92,7 @@ export function TransfersPage() {
         <div>
           <span className="eyebrow">Transferencias</span>
           <h1>Mover saldo entre tus cuentas</h1>
-          <p>La pantalla usa tu endpoint `/transfers` y muestra movimientos `category=transfer`.</p>
+          <p>Pasá dinero entre tus cuentas y seguí el registro de cada movimiento generado por la transferencia.</p>
         </div>
       </section>
 
@@ -101,7 +101,7 @@ export function TransfersPage() {
           <div className="panel-heading">
             <div>
               <span className="eyebrow">Nueva transferencia</span>
-              <h2>Formulario</h2>
+              <h2>Enviar entre cuentas</h2>
             </div>
           </div>
 
@@ -156,7 +156,7 @@ export function TransfersPage() {
                 rows={4}
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
-                placeholder="Paso interno"
+                placeholder="Ejemplo: dinero para gastos del mes"
               />
             </label>
 
@@ -182,7 +182,7 @@ export function TransfersPage() {
           <div className="panel-heading">
             <div>
               <span className="eyebrow">Historial</span>
-              <h2>Movimientos de transferencia</h2>
+              <h2>Transferencias recientes</h2>
             </div>
             <button type="button" className="ghost-button" onClick={() => void loadPage()}>
               Recargar
@@ -194,7 +194,7 @@ export function TransfersPage() {
           ) : orderedTransfers.length === 0 ? (
             <EmptyState
               title="No hay transferencias registradas"
-              description="Cuando hagas la primera, vas a ver acá ambos movimientos asociados."
+              description="Cuando hagas la primera, vas a verla reflejada en las cuentas involucradas."
             />
           ) : (
             <div className="stack-list">

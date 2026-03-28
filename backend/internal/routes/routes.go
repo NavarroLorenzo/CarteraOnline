@@ -24,6 +24,7 @@ func SetupRouter(db *pgxpool.Pool, cfg *config.Config) *gin.Engine {
 
 		accountRepo := accounts.NewPostgresRepository(db)
 		transactionRepo := transactions.NewPostgresRepository(db)
+		transferRepo := transfers.NewPostgresRepository(db)
 
 		accountService := accounts.NewService(accountRepo)
 		transactionService := transactions.NewService(transactionRepo, accountService, accountService)
@@ -31,7 +32,7 @@ func SetupRouter(db *pgxpool.Pool, cfg *config.Config) *gin.Engine {
 		accountHandler := accounts.NewHandler(accountService, transactionService)
 		transactionHandler := transactions.NewHandler(transactionService)
 
-		transferService := transfers.NewService(accountService, transactionService)
+		transferService := transfers.NewService(accountService, transferRepo)
 		transferHandler := transfers.NewHandler(transferService)
 
 		api.GET("/health", func(c *gin.Context) {
@@ -48,6 +49,7 @@ func SetupRouter(db *pgxpool.Pool, cfg *config.Config) *gin.Engine {
 
 			private.POST("/accounts", accountHandler.Create)
 			private.GET("/accounts", accountHandler.GetAll)
+			private.GET("/accounts/:id", accountHandler.GetByID)
 			private.PUT("/accounts/:id", accountHandler.Update)
 			private.DELETE("/accounts/:id", accountHandler.Delete)
 

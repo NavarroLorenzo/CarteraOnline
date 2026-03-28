@@ -26,5 +26,5 @@ export function formatTypeLabel(value: string): string {
     return "Gasto";
   }
 
-  return value.replaceAll("_", " ");
+  return value.split("_").join(" ");
 }

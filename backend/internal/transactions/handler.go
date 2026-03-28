@@ -2,6 +2,7 @@ package transactions
 
 import (
 	"cartera-app/backend/internal/auth"
+	"cartera-app/backend/internal/shared/httpjson"
 	"errors"
 	"strconv"
 	"time"
@@ -14,6 +15,7 @@ var (
 	ErrInvalidType      = errors.New("type debe ser income o expense")
 	ErrInvalidDateFrom  = errors.New("date_from debe tener formato YYYY-MM-DD")
 	ErrInvalidDateTo    = errors.New("date_to debe tener formato YYYY-MM-DD")
+	ErrInvalidDateRange = errors.New("date_from no puede ser mayor que date_to")
 )
 
 type Handler struct {
@@ -33,20 +35,28 @@ func (h *Handler) Create(c *gin.Context) {
 	var input CreateTransactionInput
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(400, gin.H{
-			"error":   "Datos inválidos",
-			"details": err.Error(),
-		})
+		httpjson.ErrorWithDetails(c, 400, "invalid_request", "Datos inválidos", err.Error())
 		return
 	}
 
 	transaction, err := h.service.Create(userID, input)
 	if err != nil {
-		if err == ErrAccountNotFound {
-			c.JSON(400, gin.H{"error": "La cuenta indicada no existe"})
-			return
+		switch err {
+		case ErrAccountNotFound:
+			httpjson.Error(c, 404, "account_not_found", err.Error())
+		case ErrAccountInactive:
+			httpjson.Error(c, 409, "account_inactive", err.Error())
+		case ErrTransactionTitleRequired:
+			httpjson.Error(c, 400, "transaction_title_required", err.Error())
+		case ErrTransactionCategoryRequired:
+			httpjson.Error(c, 400, "transaction_category_required", err.Error())
+		case ErrTransactionAmountInvalid:
+			httpjson.Error(c, 400, "transaction_amount_invalid", err.Error())
+		case ErrTransactionTypeInvalid:
+			httpjson.Error(c, 400, "transaction_type_invalid", err.Error())
+		default:
+			httpjson.Error(c, 500, "transaction_create_failed", "No se pudo crear la transacción")
 		}
-		c.JSON(500, gin.H{"error": "No se pudo crear la transacción"})
 		return
 	}
 
@@ -67,9 +77,7 @@ func (h *Handler) GetAll(c *gin.Context) {
 
 	transactions, err := h.service.GetAll(userID, filters)
 	if err != nil {
-		c.JSON(500, gin.H{
-			"error": "No se pudieron obtener las transacciones",
-		})
+		httpjson.Error(c, 500, "transactions_list_failed", "No se pudieron obtener las transacciones")
 		return
 	}
 
@@ -84,7 +92,7 @@ func (h *Handler) GetBalance(c *gin.Context) {
 
 	balance, err := h.service.GetBalance(userID)
 	if err != nil {
-		c.JSON(500, gin.H{"error": "No se pudo calcular el balance"})
+		httpjson.Error(c, 500, "balance_failed", "No se pudo calcular el balance")
 		return
 	}
 
@@ -99,7 +107,7 @@ func (h *Handler) GetBalanceByAccount(c *gin.Context) {
 
 	accounts, total, err := h.service.GetBalanceByAccountDetailed(userID)
 	if err != nil {
-		c.JSON(500, gin.H{"error": "No se pudo obtener el balance por cuenta"})
+		httpjson.Error(c, 500, "balance_by_account_failed", "No se pudo obtener el balance por cuenta")
 		return
 	}
 
@@ -152,21 +160,27 @@ func buildTransactionFilters(c *gin.Context) (TransactionFilters, error) {
 		filters.DateTo = &dateTo
 	}
 
+	if filters.DateFrom != nil && filters.DateTo != nil && filters.DateFrom.After(*filters.DateTo) {
+		return filters, ErrInvalidDateRange
+	}
+
 	return filters, nil
 }
 
 func (h *Handler) handleFilterError(c *gin.Context, err error) {
 	switch err {
 	case ErrInvalidAccountID:
-		c.JSON(400, gin.H{"error": ErrInvalidAccountID.Error()})
+		httpjson.Error(c, 400, "invalid_account_id", ErrInvalidAccountID.Error())
 	case ErrInvalidType:
-		c.JSON(400, gin.H{"error": ErrInvalidType.Error()})
+		httpjson.Error(c, 400, "invalid_transaction_type", ErrInvalidType.Error())
 	case ErrInvalidDateFrom:
-		c.JSON(400, gin.H{"error": ErrInvalidDateFrom.Error()})
+		httpjson.Error(c, 400, "invalid_date_from", ErrInvalidDateFrom.Error())
 	case ErrInvalidDateTo:
-		c.JSON(400, gin.H{"error": ErrInvalidDateTo.Error()})
+		httpjson.Error(c, 400, "invalid_date_to", ErrInvalidDateTo.Error())
+	case ErrInvalidDateRange:
+		httpjson.Error(c, 400, "invalid_date_range", ErrInvalidDateRange.Error())
 	default:
-		c.JSON(400, gin.H{"error": "Filtros inválidos"})
+		httpjson.Error(c, 400, "invalid_filters", "Filtros inválidos")
 	}
 }
 
@@ -184,9 +198,7 @@ func (h *Handler) GetSummary(c *gin.Context) {
 
 	summary, err := h.service.GetSummary(userID, filters)
 	if err != nil {
-		c.JSON(500, gin.H{
-			"error": "No se pudo obtener el resumen de transacciones",
-		})
+		httpjson.Error(c, 500, "summary_failed", "No se pudo obtener el resumen de transacciones")
 		return
 	}
 
@@ -201,7 +213,7 @@ func (h *Handler) GetByID(c *gin.Context) {
 
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(400, gin.H{"error": "id inválido"})
+		httpjson.Error(c, 400, "invalid_transaction_id", "id inválido")
 		return
 	}
 
@@ -209,9 +221,9 @@ func (h *Handler) GetByID(c *gin.Context) {
 	if err != nil {
 		switch err {
 		case ErrTransactionNotFound:
-			c.JSON(404, gin.H{"error": err.Error()})
+			httpjson.Error(c, 404, "transaction_not_found", err.Error())
 		default:
-			c.JSON(500, gin.H{"error": "No se pudo obtener la transacción"})
+			httpjson.Error(c, 500, "transaction_get_failed", "No se pudo obtener la transacción")
 		}
 		return
 	}
@@ -227,16 +239,13 @@ func (h *Handler) Update(c *gin.Context) {
 
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(400, gin.H{"error": "id inválido"})
+		httpjson.Error(c, 400, "invalid_transaction_id", "id inválido")
 		return
 	}
 
 	var input UpdateTransactionInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(400, gin.H{
-			"error":   "Datos inválidos",
-			"details": err.Error(),
-		})
+		httpjson.ErrorWithDetails(c, 400, "invalid_request", "Datos inválidos", err.Error())
 		return
 	}
 
@@ -244,13 +253,23 @@ func (h *Handler) Update(c *gin.Context) {
 	if err != nil {
 		switch err {
 		case ErrTransactionNotFound:
-			c.JSON(404, gin.H{"error": err.Error()})
+			httpjson.Error(c, 404, "transaction_not_found", err.Error())
 		case ErrAccountNotFound:
-			c.JSON(400, gin.H{"error": "La cuenta indicada no existe"})
+			httpjson.Error(c, 404, "account_not_found", err.Error())
+		case ErrAccountInactive:
+			httpjson.Error(c, 409, "account_inactive", err.Error())
 		case ErrCannotUpdateTransfer:
-			c.JSON(400, gin.H{"error": err.Error()})
+			httpjson.Error(c, 409, "transfer_update_blocked", err.Error())
+		case ErrTransactionTitleRequired:
+			httpjson.Error(c, 400, "transaction_title_required", err.Error())
+		case ErrTransactionCategoryRequired:
+			httpjson.Error(c, 400, "transaction_category_required", err.Error())
+		case ErrTransactionAmountInvalid:
+			httpjson.Error(c, 400, "transaction_amount_invalid", err.Error())
+		case ErrTransactionTypeInvalid:
+			httpjson.Error(c, 400, "transaction_type_invalid", err.Error())
 		default:
-			c.JSON(500, gin.H{"error": "No se pudo actualizar la transacción"})
+			httpjson.Error(c, 500, "transaction_update_failed", "No se pudo actualizar la transacción")
 		}
 		return
 	}
@@ -266,7 +285,7 @@ func (h *Handler) Delete(c *gin.Context) {
 
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(400, gin.H{"error": "id inválido"})
+		httpjson.Error(c, 400, "invalid_transaction_id", "id inválido")
 		return
 	}
 
@@ -274,9 +293,9 @@ func (h *Handler) Delete(c *gin.Context) {
 	if err != nil {
 		switch err {
 		case ErrTransactionNotFound:
-			c.JSON(404, gin.H{"error": err.Error()})
+			httpjson.Error(c, 404, "transaction_not_found", err.Error())
 		default:
-			c.JSON(500, gin.H{"error": "No se pudo eliminar la transacción"})
+			httpjson.Error(c, 500, "transaction_delete_failed", "No se pudo eliminar la transacción")
 		}
 		return
 	}

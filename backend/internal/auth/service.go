@@ -2,7 +2,11 @@ package auth
 
 import (
 	"errors"
+	"net/mail"
+	"regexp"
 	"strings"
+
+	"cartera-app/backend/internal/shared/normalize"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -11,6 +15,11 @@ var ErrInvalidCredentials = errors.New("credenciales inválidas")
 var ErrEmailAlreadyInUse = errors.New("el email ya está en uso")
 var ErrUsernameAlreadyInUse = errors.New("el nombre de usuario ya está en uso")
 var ErrUserNotFound = errors.New("el usuario no existe")
+var ErrInvalidEmail = errors.New("el email no es válido")
+var ErrInvalidUsername = errors.New("el nombre de usuario no es válido")
+var ErrWeakPassword = errors.New("la contraseña debe tener al menos 8 caracteres")
+
+var usernamePattern = regexp.MustCompile(`^[a-z0-9._-]+$`)
 
 type Service interface {
 	Register(input RegisterInput) (AuthResponse, error)
@@ -31,8 +40,19 @@ func NewService(repo Repository, tokenManager *TokenManager) Service {
 }
 
 func (s *service) Register(input RegisterInput) (AuthResponse, error) {
-	email := normalizeIdentifier(input.Email)
-	username := normalizeIdentifier(input.Username)
+	email, err := normalizeEmail(input.Email)
+	if err != nil {
+		return AuthResponse{}, err
+	}
+
+	username, err := normalizeUsername(input.Username)
+	if err != nil {
+		return AuthResponse{}, err
+	}
+
+	if len(strings.TrimSpace(input.Password)) < 8 {
+		return AuthResponse{}, ErrWeakPassword
+	}
 
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -60,7 +80,7 @@ func (s *service) Register(input RegisterInput) (AuthResponse, error) {
 }
 
 func (s *service) Login(input LoginInput) (AuthResponse, error) {
-	identifier := normalizeIdentifier(input.Identifier)
+	identifier := normalize.LowerIdentifier(input.Identifier)
 
 	record, found, err := s.repo.GetByIdentifier(identifier)
 	if err != nil {
@@ -97,6 +117,21 @@ func (s *service) GetByID(id int64) (User, error) {
 	return user, nil
 }
 
-func normalizeIdentifier(value string) string {
-	return strings.ToLower(strings.TrimSpace(value))
+func normalizeEmail(value string) (string, error) {
+	email := normalize.LowerIdentifier(value)
+	parsed, err := mail.ParseAddress(email)
+	if err != nil || parsed.Address != email {
+		return "", ErrInvalidEmail
+	}
+
+	return email, nil
+}
+
+func normalizeUsername(value string) (string, error) {
+	username := normalize.LowerIdentifier(value)
+	if len(username) < 3 || !usernamePattern.MatchString(username) {
+		return "", ErrInvalidUsername
+	}
+
+	return username, nil
 }

@@ -35,11 +35,10 @@ export function RegisterPage() {
   return (
     <div className="auth-shell">
       <section className="auth-panel auth-panel--hero auth-panel--hero-alt">
-        <span className="eyebrow">Onboarding</span>
-        <h1>Creá un acceso propio antes de cargar cuentas y movimientos.</h1>
+        <span className="eyebrow">Primer paso</span>
+        <h1>Creá tu usuario y empezá a ordenar tus finanzas.</h1>
         <p>
-          Más adelante podés sumar verificación de email o login con Gmail sin rehacer la base del
-          frontend.
+          Después vas a poder cargar cuentas, registrar ingresos y gastos, y mover saldo entre tus cuentas.
         </p>
       </section>
 
@@ -47,7 +46,7 @@ export function RegisterPage() {
         <div className="panel-heading">
           <span className="eyebrow">Registro</span>
           <h2>Nuevo usuario</h2>
-          <p>Guardamos el token y te redirigimos a tu panel al terminar.</p>
+          <p>Completá tus datos para entrar directo a tu panel personal.</p>
         </div>
 
         <form className="stack-form" onSubmit={handleSubmit}>
@@ -79,7 +78,7 @@ export function RegisterPage() {
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              placeholder="mínimo 6 caracteres"
+              placeholder="mínimo 8 caracteres"
               required
             />
           </label>

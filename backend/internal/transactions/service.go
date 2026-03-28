@@ -2,17 +2,23 @@ package transactions
 
 import (
 	"cartera-app/backend/internal/accounts"
+	"cartera-app/backend/internal/shared/normalize"
 	"errors"
+	"strings"
 )
 
 var ErrAccountNotFound = errors.New("la cuenta indicada no existe")
+var ErrAccountInactive = errors.New("la cuenta indicada está inactiva")
 var ErrTransactionNotFound = errors.New("la transacción no existe")
 var ErrCannotUpdateTransfer = errors.New("las transacciones de transferencia no se editan individualmente")
-
-const InitialBalanceCategory = "initial_balance"
+var ErrTransactionTitleRequired = errors.New("el título de la transacción es obligatorio")
+var ErrTransactionCategoryRequired = errors.New("la categoría de la transacción es obligatoria")
+var ErrTransactionAmountInvalid = errors.New("el monto debe ser mayor a cero")
+var ErrTransactionTypeInvalid = errors.New("el tipo de transacción no es válido")
 
 type AccountFinder interface {
-	ExistsByID(userID, id int64) (bool, error)
+	GetByID(userID, id int64) (accounts.Account, bool, error)
+	GetAll(userID int64) ([]accounts.Account, error)
 }
 
 type AccountBalance struct {
@@ -48,17 +54,25 @@ func NewService(repo Repository, accountFinder AccountFinder, accountSvc account
 }
 
 func (s *service) Create(userID int64, input CreateTransactionInput) (Transaction, error) {
-	exists, err := s.accountFinder.ExistsByID(userID, input.AccountID)
+	prepared, err := normalizeCreateInput(input)
 	if err != nil {
 		return Transaction{}, err
 	}
 
-	if !exists {
-		return Transaction{}, ErrAccountNotFound
+	account, found, err := s.accountFinder.GetByID(userID, prepared.AccountID)
+	if err != nil {
+		return Transaction{}, err
 	}
 
-	input.UserID = userID
-	return s.repo.Create(userID, input)
+	if !found {
+		return Transaction{}, ErrAccountNotFound
+	}
+	if !account.IsActive {
+		return Transaction{}, ErrAccountInactive
+	}
+
+	prepared.UserID = userID
+	return s.repo.Create(userID, prepared)
 }
 
 func (s *service) GetAll(userID int64, filters TransactionFilters) ([]Transaction, error) {
@@ -103,10 +117,15 @@ func (s *service) GetSummary(userID int64, filters TransactionFilters) (Transact
 }
 
 func (s *service) CreateInitialBalance(userID, accountID int64, amount float64) error {
-	_, err := s.repo.Create(userID, CreateTransactionInput{
+	normalizedAmount, err := normalize.Money(amount)
+	if err != nil {
+		return ErrTransactionAmountInvalid
+	}
+
+	_, err = s.repo.Create(userID, CreateTransactionInput{
 		UserID:      userID,
 		Title:       "Saldo inicial",
-		Amount:      amount,
+		Amount:      normalizedAmount,
 		Type:        Income,
 		AccountID:   accountID,
 		Category:    InitialBalanceCategory,
@@ -127,14 +146,6 @@ func (s *service) GetByID(userID, id int64) (Transaction, error) {
 }
 
 func (s *service) Update(userID, id int64, input UpdateTransactionInput) (Transaction, error) {
-	exists, err := s.accountFinder.ExistsByID(userID, input.AccountID)
-	if err != nil {
-		return Transaction{}, err
-	}
-	if !exists {
-		return Transaction{}, ErrAccountNotFound
-	}
-
 	current, found, err := s.repo.GetByID(userID, id)
 	if err != nil {
 		return Transaction{}, err
@@ -147,7 +158,23 @@ func (s *service) Update(userID, id int64, input UpdateTransactionInput) (Transa
 		return Transaction{}, ErrCannotUpdateTransfer
 	}
 
-	return s.repo.Update(userID, id, input)
+	prepared, err := normalizeUpdateInput(input)
+	if err != nil {
+		return Transaction{}, err
+	}
+
+	account, found, err := s.accountFinder.GetByID(userID, prepared.AccountID)
+	if err != nil {
+		return Transaction{}, err
+	}
+	if !found {
+		return Transaction{}, ErrAccountNotFound
+	}
+	if !account.IsActive {
+		return Transaction{}, ErrAccountInactive
+	}
+
+	return s.repo.Update(userID, id, prepared)
 }
 
 func (s *service) Delete(userID, id int64) error {
@@ -164,4 +191,66 @@ func (s *service) Delete(userID, id int64) error {
 	}
 
 	return s.repo.Delete(userID, id)
+}
+
+func normalizeCreateInput(input CreateTransactionInput) (CreateTransactionInput, error) {
+	title := normalize.Optional(input.Title)
+	if title == "" {
+		return CreateTransactionInput{}, ErrTransactionTitleRequired
+	}
+
+	category := normalize.Optional(input.Category)
+	if category == "" {
+		return CreateTransactionInput{}, ErrTransactionCategoryRequired
+	}
+
+	if input.Type != Income && input.Type != Expense {
+		return CreateTransactionInput{}, ErrTransactionTypeInvalid
+	}
+
+	amount, err := normalize.Money(input.Amount)
+	if err != nil {
+		return CreateTransactionInput{}, ErrTransactionAmountInvalid
+	}
+
+	return CreateTransactionInput{
+		UserID:      input.UserID,
+		Title:       title,
+		Amount:      amount,
+		Type:        input.Type,
+		AccountID:   input.AccountID,
+		Category:    category,
+		Description: normalize.Optional(input.Description),
+		TransferID:  input.TransferID,
+	}, nil
+}
+
+func normalizeUpdateInput(input UpdateTransactionInput) (UpdateTransactionInput, error) {
+	title := normalize.Optional(input.Title)
+	if title == "" {
+		return UpdateTransactionInput{}, ErrTransactionTitleRequired
+	}
+
+	category := normalize.Optional(input.Category)
+	if category == "" {
+		return UpdateTransactionInput{}, ErrTransactionCategoryRequired
+	}
+
+	if input.Type != Income && input.Type != Expense {
+		return UpdateTransactionInput{}, ErrTransactionTypeInvalid
+	}
+
+	amount, err := normalize.Money(input.Amount)
+	if err != nil {
+		return UpdateTransactionInput{}, ErrTransactionAmountInvalid
+	}
+
+	return UpdateTransactionInput{
+		Title:       title,
+		Amount:      amount,
+		Type:        input.Type,
+		AccountID:   input.AccountID,
+		Category:    category,
+		Description: strings.TrimSpace(normalize.Optional(input.Description)),
+	}, nil
 }
