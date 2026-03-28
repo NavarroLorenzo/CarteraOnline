@@ -2,21 +2,23 @@ package transactions
 
 import (
 	"context"
+	"errors"
 	"strconv"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Repository interface {
-	Create(input CreateTransactionInput) (Transaction, error)
-	GetAll(filters TransactionFilters) ([]Transaction, error)
-	GetByID(id int64) (Transaction, bool, error)
-	Update(id int64, input UpdateTransactionInput) (Transaction, error)
-	Delete(id int64) error
-	DeleteByTransferID(transferID string) error
-	GetBalance() (float64, error)
-	GetBalanceByAccount() (map[int64]float64, error)
-	GetSummary(filters TransactionFilters) (TransactionSummary, error)
+	Create(userID int64, input CreateTransactionInput) (Transaction, error)
+	GetAll(userID int64, filters TransactionFilters) ([]Transaction, error)
+	GetByID(userID, id int64) (Transaction, bool, error)
+	Update(userID, id int64, input UpdateTransactionInput) (Transaction, error)
+	Delete(userID, id int64) error
+	DeleteByTransferID(userID int64, transferID string) error
+	GetBalance(userID int64) (float64, error)
+	GetBalanceByAccount(userID int64) (map[int64]float64, error)
+	GetSummary(userID int64, filters TransactionFilters) (TransactionSummary, error)
 }
 
 type PostgresRepository struct {
@@ -27,17 +29,18 @@ func NewPostgresRepository(db *pgxpool.Pool) *PostgresRepository {
 	return &PostgresRepository{db: db}
 }
 
-func (r *PostgresRepository) Create(input CreateTransactionInput) (Transaction, error) {
+func (r *PostgresRepository) Create(userID int64, input CreateTransactionInput) (Transaction, error) {
 	var t Transaction
 
 	query := `
-			INSERT INTO transactions (title, amount, type, account_id, category, description, transfer_id)
-			VALUES ($1, $2, $3, $4, $5, $6, $7)
-			RETURNING id, title, amount, type, account_id, category, description, transfer_id, created_at
+			INSERT INTO transactions (user_id, title, amount, type, account_id, category, description, transfer_id)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+			RETURNING id, user_id, title, amount, type, account_id, category, description, transfer_id, created_at
 	`
 	err := r.db.QueryRow(
 		context.Background(),
 		query,
+		userID,
 		input.Title,
 		input.Amount,
 		input.Type,
@@ -47,6 +50,7 @@ func (r *PostgresRepository) Create(input CreateTransactionInput) (Transaction, 
 		input.TransferID,
 	).Scan(
 		&t.ID,
+		&t.UserID,
 		&t.Title,
 		&t.Amount,
 		&t.Type,
@@ -60,15 +64,15 @@ func (r *PostgresRepository) Create(input CreateTransactionInput) (Transaction, 
 	return t, err
 }
 
-func (r *PostgresRepository) GetAll(filters TransactionFilters) ([]Transaction, error) {
+func (r *PostgresRepository) GetAll(userID int64, filters TransactionFilters) ([]Transaction, error) {
 	query := `
-		SELECT id, title, amount, type, account_id, category, description, transfer_id, created_at
+		SELECT id, user_id, title, amount, type, account_id, category, description, transfer_id, created_at
 		FROM transactions
-		WHERE 1=1
+		WHERE user_id = $1
 	`
 
-	args := []interface{}{}
-	argPos := 1
+	args := []interface{}{userID}
+	argPos := 2
 
 	if filters.AccountID != nil {
 		query += ` AND account_id = $` + strconv.Itoa(argPos)
@@ -108,12 +112,13 @@ func (r *PostgresRepository) GetAll(filters TransactionFilters) ([]Transaction, 
 	}
 	defer rows.Close()
 
-	var transactions []Transaction
+	transactions := make([]Transaction, 0)
 
 	for rows.Next() {
 		var t Transaction
 		if err := rows.Scan(
 			&t.ID,
+			&t.UserID,
 			&t.Title,
 			&t.Amount,
 			&t.Type,
@@ -131,7 +136,7 @@ func (r *PostgresRepository) GetAll(filters TransactionFilters) ([]Transaction, 
 	return transactions, rows.Err()
 }
 
-func (r *PostgresRepository) GetBalance() (float64, error) {
+func (r *PostgresRepository) GetBalance(userID int64) (float64, error) {
 	query := `
 		SELECT COALESCE(SUM(
 			CASE
@@ -141,14 +146,15 @@ func (r *PostgresRepository) GetBalance() (float64, error) {
 			END
 		), 0)
 		FROM transactions
+		WHERE user_id = $1
 	`
 
 	var balance float64
-	err := r.db.QueryRow(context.Background(), query).Scan(&balance)
+	err := r.db.QueryRow(context.Background(), query, userID).Scan(&balance)
 	return balance, err
 }
 
-func (r *PostgresRepository) GetBalanceByAccount() (map[int64]float64, error) {
+func (r *PostgresRepository) GetBalanceByAccount(userID int64) (map[int64]float64, error) {
 	query := `
 		SELECT
 			account_id,
@@ -160,11 +166,12 @@ func (r *PostgresRepository) GetBalanceByAccount() (map[int64]float64, error) {
 				END
 			), 0) AS balance
 		FROM transactions
+		WHERE user_id = $1
 		GROUP BY account_id
 		ORDER BY account_id
 	`
 
-	rows, err := r.db.Query(context.Background(), query)
+	rows, err := r.db.Query(context.Background(), query, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +193,7 @@ func (r *PostgresRepository) GetBalanceByAccount() (map[int64]float64, error) {
 	return result, rows.Err()
 }
 
-func (r *PostgresRepository) GetSummary(filters TransactionFilters) (TransactionSummary, error) {
+func (r *PostgresRepository) GetSummary(userID int64, filters TransactionFilters) (TransactionSummary, error) {
 	query := `
 		SELECT
 			COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) AS income_total,
@@ -198,11 +205,11 @@ func (r *PostgresRepository) GetSummary(filters TransactionFilters) (Transaction
 			END), 0) AS net_balance,
 			COUNT(*) AS transactions_count
 		FROM transactions
-		WHERE 1=1
+		WHERE user_id = $1
 	`
 
-	args := []interface{}{}
-	argPos := 1
+	args := []interface{}{userID}
+	argPos := 2
 
 	if filters.AccountID != nil {
 		query += ` AND account_id = $` + strconv.Itoa(argPos)
@@ -246,17 +253,18 @@ func (r *PostgresRepository) GetSummary(filters TransactionFilters) (Transaction
 	return summary, err
 }
 
-func (r *PostgresRepository) GetByID(id int64) (Transaction, bool, error) {
+func (r *PostgresRepository) GetByID(userID, id int64) (Transaction, bool, error) {
 	query := `
-		SELECT id, title, amount, type, account_id, category, description, transfer_id, created_at
+		SELECT id, user_id, title, amount, type, account_id, category, description, transfer_id, created_at
 		FROM transactions
-		WHERE id = $1
+		WHERE id = $1 AND user_id = $2
 	`
 
 	var t Transaction
 
-	err := r.db.QueryRow(context.Background(), query, id).Scan(
+	err := r.db.QueryRow(context.Background(), query, id, userID).Scan(
 		&t.ID,
+		&t.UserID,
 		&t.Title,
 		&t.Amount,
 		&t.Type,
@@ -268,7 +276,7 @@ func (r *PostgresRepository) GetByID(id int64) (Transaction, bool, error) {
 	)
 
 	if err != nil {
-		if err.Error() == "no rows in result set" {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return Transaction{}, false, nil
 		}
 		return Transaction{}, false, err
@@ -277,7 +285,7 @@ func (r *PostgresRepository) GetByID(id int64) (Transaction, bool, error) {
 	return t, true, nil
 }
 
-func (r *PostgresRepository) Update(id int64, input UpdateTransactionInput) (Transaction, error) {
+func (r *PostgresRepository) Update(userID, id int64, input UpdateTransactionInput) (Transaction, error) {
 	query := `
 		UPDATE transactions
 		SET title = $1,
@@ -286,8 +294,8 @@ func (r *PostgresRepository) Update(id int64, input UpdateTransactionInput) (Tra
 			account_id = $4,
 			category = $5,
 			description = $6
-		WHERE id = $7
-		RETURNING id, title, amount, type, account_id, category, description, transfer_id, created_at
+		WHERE id = $7 AND user_id = $8
+		RETURNING id, user_id, title, amount, type, account_id, category, description, transfer_id, created_at
 	`
 
 	var t Transaction
@@ -302,8 +310,10 @@ func (r *PostgresRepository) Update(id int64, input UpdateTransactionInput) (Tra
 		input.Category,
 		input.Description,
 		id,
+		userID,
 	).Scan(
 		&t.ID,
+		&t.UserID,
 		&t.Title,
 		&t.Amount,
 		&t.Type,
@@ -317,14 +327,14 @@ func (r *PostgresRepository) Update(id int64, input UpdateTransactionInput) (Tra
 	return t, err
 }
 
-func (r *PostgresRepository) Delete(id int64) error {
-	query := `DELETE FROM transactions WHERE id = $1`
-	_, err := r.db.Exec(context.Background(), query, id)
+func (r *PostgresRepository) Delete(userID, id int64) error {
+	query := `DELETE FROM transactions WHERE id = $1 AND user_id = $2`
+	_, err := r.db.Exec(context.Background(), query, id, userID)
 	return err
 }
 
-func (r *PostgresRepository) DeleteByTransferID(transferID string) error {
-	query := `DELETE FROM transactions WHERE transfer_id = $1`
-	_, err := r.db.Exec(context.Background(), query, transferID)
+func (r *PostgresRepository) DeleteByTransferID(userID int64, transferID string) error {
+	query := `DELETE FROM transactions WHERE transfer_id = $1 AND user_id = $2`
+	_, err := r.db.Exec(context.Background(), query, transferID, userID)
 	return err
 }

@@ -11,6 +11,7 @@ const (
 
 type Transaction struct {
 	ID          int64           `json:"id"`
+	UserID      int64           `json:"-"`
 	Title       string          `json:"title"`
 	Amount      float64         `json:"amount"`
 	Type        TransactionType `json:"type"`
@@ -22,6 +23,7 @@ type Transaction struct {
 }
 
 type CreateTransactionInput struct {
+	UserID      int64           `json:"-"`
 	Title       string          `json:"title" binding:"required"`
 	Amount      float64         `json:"amount" binding:"required,gt=0"`
 	Type        TransactionType `json:"type" binding:"required,oneof=income expense"`

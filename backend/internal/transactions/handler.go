@@ -1,6 +1,7 @@
 package transactions
 
 import (
+	"cartera-app/backend/internal/auth"
 	"errors"
 	"strconv"
 	"time"
@@ -24,6 +25,11 @@ func NewHandler(service Service) *Handler {
 }
 
 func (h *Handler) Create(c *gin.Context) {
+	userID, ok := auth.AbortIfUnauthenticated(c)
+	if !ok {
+		return
+	}
+
 	var input CreateTransactionInput
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -34,7 +40,7 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	transaction, err := h.service.Create(input)
+	transaction, err := h.service.Create(userID, input)
 	if err != nil {
 		if err == ErrAccountNotFound {
 			c.JSON(400, gin.H{"error": "La cuenta indicada no existe"})
@@ -48,13 +54,18 @@ func (h *Handler) Create(c *gin.Context) {
 }
 
 func (h *Handler) GetAll(c *gin.Context) {
+	userID, ok := auth.AbortIfUnauthenticated(c)
+	if !ok {
+		return
+	}
+
 	filters, err := buildTransactionFilters(c)
 	if err != nil {
 		h.handleFilterError(c, err)
 		return
 	}
 
-	transactions, err := h.service.GetAll(filters)
+	transactions, err := h.service.GetAll(userID, filters)
 	if err != nil {
 		c.JSON(500, gin.H{
 			"error": "No se pudieron obtener las transacciones",
@@ -66,7 +77,12 @@ func (h *Handler) GetAll(c *gin.Context) {
 }
 
 func (h *Handler) GetBalance(c *gin.Context) {
-	balance, err := h.service.GetBalance()
+	userID, ok := auth.AbortIfUnauthenticated(c)
+	if !ok {
+		return
+	}
+
+	balance, err := h.service.GetBalance(userID)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "No se pudo calcular el balance"})
 		return
@@ -76,7 +92,12 @@ func (h *Handler) GetBalance(c *gin.Context) {
 }
 
 func (h *Handler) GetBalanceByAccount(c *gin.Context) {
-	accounts, total, err := h.service.GetBalanceByAccountDetailed()
+	userID, ok := auth.AbortIfUnauthenticated(c)
+	if !ok {
+		return
+	}
+
+	accounts, total, err := h.service.GetBalanceByAccountDetailed(userID)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "No se pudo obtener el balance por cuenta"})
 		return
@@ -150,13 +171,18 @@ func (h *Handler) handleFilterError(c *gin.Context, err error) {
 }
 
 func (h *Handler) GetSummary(c *gin.Context) {
+	userID, ok := auth.AbortIfUnauthenticated(c)
+	if !ok {
+		return
+	}
+
 	filters, err := buildTransactionFilters(c)
 	if err != nil {
 		h.handleFilterError(c, err)
 		return
 	}
 
-	summary, err := h.service.GetSummary(filters)
+	summary, err := h.service.GetSummary(userID, filters)
 	if err != nil {
 		c.JSON(500, gin.H{
 			"error": "No se pudo obtener el resumen de transacciones",
@@ -168,13 +194,18 @@ func (h *Handler) GetSummary(c *gin.Context) {
 }
 
 func (h *Handler) GetByID(c *gin.Context) {
+	userID, ok := auth.AbortIfUnauthenticated(c)
+	if !ok {
+		return
+	}
+
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		c.JSON(400, gin.H{"error": "id inválido"})
 		return
 	}
 
-	transaction, err := h.service.GetByID(id)
+	transaction, err := h.service.GetByID(userID, id)
 	if err != nil {
 		switch err {
 		case ErrTransactionNotFound:
@@ -189,6 +220,11 @@ func (h *Handler) GetByID(c *gin.Context) {
 }
 
 func (h *Handler) Update(c *gin.Context) {
+	userID, ok := auth.AbortIfUnauthenticated(c)
+	if !ok {
+		return
+	}
+
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		c.JSON(400, gin.H{"error": "id inválido"})
@@ -204,7 +240,7 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 
-	transaction, err := h.service.Update(id, input)
+	transaction, err := h.service.Update(userID, id, input)
 	if err != nil {
 		switch err {
 		case ErrTransactionNotFound:
@@ -223,13 +259,18 @@ func (h *Handler) Update(c *gin.Context) {
 }
 
 func (h *Handler) Delete(c *gin.Context) {
+	userID, ok := auth.AbortIfUnauthenticated(c)
+	if !ok {
+		return
+	}
+
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		c.JSON(400, gin.H{"error": "id inválido"})
 		return
 	}
 
-	err = h.service.Delete(id)
+	err = h.service.Delete(userID, id)
 	if err != nil {
 		switch err {
 		case ErrTransactionNotFound:

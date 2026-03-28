@@ -13,7 +13,7 @@ func main() {
 	db := database.NewPool(cfg)
 	defer db.Close()
 
-	router := routes.SetupRouter(db)
+	router := routes.SetupRouter(db, cfg)
 
 	log.Printf("Servidor corriendo en http://localhost:%s", cfg.AppPort)
 

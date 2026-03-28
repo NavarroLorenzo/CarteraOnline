@@ -1,0 +1,221 @@
+import { useEffect, useMemo, useState } from "react";
+import { accountsApi } from "../api/accounts";
+import { ApiError } from "../api/client";
+import { transactionsApi } from "../api/transactions";
+import { transfersApi } from "../api/transfers";
+import { EmptyState } from "../components/ui/EmptyState";
+import { formatCurrency, formatDate } from "../lib/format";
+import type { Account, Transaction } from "../types/api";
+
+export function TransfersPage() {
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [transferRows, setTransferRows] = useState<Transaction[]>([]);
+  const [fromAccountId, setFromAccountId] = useState("");
+  const [toAccountId, setToAccountId] = useState("");
+  const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const accountMap = useMemo(
+    () => new Map(accounts.map((account) => [account.id, account.name])),
+    [accounts],
+  );
+
+  const loadPage = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const [accountsData, transfersData] = await Promise.all([
+        accountsApi.list(),
+        transactionsApi.list({ category: "transfer" }),
+      ]);
+
+      setAccounts(accountsData);
+      setTransferRows(transfersData);
+
+      if (accountsData[0]) {
+        setFromAccountId((current) => current || String(accountsData[0].id));
+      }
+
+      if (accountsData[1]) {
+        setToAccountId((current) => current || String(accountsData[1].id));
+      }
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "No se pudieron cargar las transferencias");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadPage();
+  }, []);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      await transfersApi.create({
+        from_account_id: Number(fromAccountId),
+        to_account_id: Number(toAccountId),
+        amount: Number(amount),
+        description,
+      });
+
+      setAmount("");
+      setDescription("");
+      setSuccess("Transferencia registrada correctamente");
+      await loadPage();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "No se pudo registrar la transferencia");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const orderedTransfers = useMemo(
+    () =>
+      [...transferRows].sort((left, right) => Date.parse(right.created_at) - Date.parse(left.created_at)),
+    [transferRows],
+  );
+
+  return (
+    <div className="page-stack">
+      <section className="page-header">
+        <div>
+          <span className="eyebrow">Transferencias</span>
+          <h1>Mover saldo entre tus cuentas</h1>
+          <p>La pantalla usa tu endpoint `/transfers` y muestra movimientos `category=transfer`.</p>
+        </div>
+      </section>
+
+      <section className="content-grid">
+        <article className="panel">
+          <div className="panel-heading">
+            <div>
+              <span className="eyebrow">Nueva transferencia</span>
+              <h2>Formulario</h2>
+            </div>
+          </div>
+
+          <form className="stack-form" onSubmit={handleSubmit}>
+            <label className="field">
+              <span>Cuenta origen</span>
+              <select
+                value={fromAccountId}
+                onChange={(event) => setFromAccountId(event.target.value)}
+                required
+                disabled={accounts.length < 2}
+              >
+                {accounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="field">
+              <span>Cuenta destino</span>
+              <select
+                value={toAccountId}
+                onChange={(event) => setToAccountId(event.target.value)}
+                required
+                disabled={accounts.length < 2}
+              >
+                {accounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="field">
+              <span>Monto</span>
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={amount}
+                onChange={(event) => setAmount(event.target.value)}
+                required
+              />
+            </label>
+
+            <label className="field">
+              <span>Descripción</span>
+              <textarea
+                rows={4}
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                placeholder="Paso interno"
+              />
+            </label>
+
+            {accounts.length < 2 ? (
+              <p className="feedback feedback--warning">
+                Necesitás al menos dos cuentas para poder transferir.
+              </p>
+            ) : null}
+            {error ? <p className="feedback feedback--error">{error}</p> : null}
+            {success ? <p className="feedback feedback--success">{success}</p> : null}
+
+            <button
+              type="submit"
+              className="primary-button"
+              disabled={submitting || accounts.length < 2}
+            >
+              {submitting ? "Enviando..." : "Registrar transferencia"}
+            </button>
+          </form>
+        </article>
+
+        <article className="panel">
+          <div className="panel-heading">
+            <div>
+              <span className="eyebrow">Historial</span>
+              <h2>Movimientos de transferencia</h2>
+            </div>
+            <button type="button" className="ghost-button" onClick={() => void loadPage()}>
+              Recargar
+            </button>
+          </div>
+
+          {loading ? (
+            <p className="feedback">Cargando transferencias...</p>
+          ) : orderedTransfers.length === 0 ? (
+            <EmptyState
+              title="No hay transferencias registradas"
+              description="Cuando hagas la primera, vas a ver acá ambos movimientos asociados."
+            />
+          ) : (
+            <div className="stack-list">
+              {orderedTransfers.map((transaction) => (
+                <div key={transaction.id} className="list-row list-row--transaction">
+                  <div>
+                    <strong>{transaction.title}</strong>
+                    <p>{accountMap.get(transaction.account_id) ?? `Cuenta ${transaction.account_id}`}</p>
+                    {transaction.transfer_id ? <small>ID: {transaction.transfer_id}</small> : null}
+                  </div>
+
+                  <div className="list-row__meta">
+                    <strong>{formatCurrency(transaction.amount)}</strong>
+                    <span>{formatDate(transaction.created_at)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </article>
+      </section>
+    </div>
+  );
+}

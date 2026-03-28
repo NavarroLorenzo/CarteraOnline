@@ -15,11 +15,11 @@ var (
 )
 
 type AccountProvider interface {
-	GetByID(id int64) (accounts.Account, bool, error)
+	GetByID(userID, id int64) (accounts.Account, bool, error)
 }
 
 type TransactionCreator interface {
-	Create(input transactions.CreateTransactionInput) (transactions.Transaction, error)
+	Create(userID int64, input transactions.CreateTransactionInput) (transactions.Transaction, error)
 }
 
 type Service struct {
@@ -34,17 +34,17 @@ func NewService(accountProvider AccountProvider, transactionSvc TransactionCreat
 	}
 }
 
-func (s *Service) CreateTransfer(input CreateTransferInput) error {
+func (s *Service) CreateTransfer(userID int64, input CreateTransferInput) error {
 	if input.FromAccountID == input.ToAccountID {
 		return ErrSameAccount
 	}
 
-	fromAccount, found, err := s.accountProvider.GetByID(input.FromAccountID)
+	fromAccount, found, err := s.accountProvider.GetByID(userID, input.FromAccountID)
 	if err != nil || !found {
 		return ErrAccountNotFound
 	}
 
-	toAccount, found, err := s.accountProvider.GetByID(input.ToAccountID)
+	toAccount, found, err := s.accountProvider.GetByID(userID, input.ToAccountID)
 	if err != nil || !found {
 		return ErrAccountNotFound
 	}
@@ -59,7 +59,8 @@ func (s *Service) CreateTransfer(input CreateTransferInput) error {
 		incomeDescription += ". " + input.Description
 	}
 
-	_, err = s.transactionSvc.Create(transactions.CreateTransactionInput{
+	_, err = s.transactionSvc.Create(userID, transactions.CreateTransactionInput{
+		UserID:      userID,
 		Title:       "Transferencia enviada",
 		Amount:      input.Amount,
 		Type:        transactions.Expense,
@@ -72,7 +73,8 @@ func (s *Service) CreateTransfer(input CreateTransferInput) error {
 		return err
 	}
 
-	_, err = s.transactionSvc.Create(transactions.CreateTransactionInput{
+	_, err = s.transactionSvc.Create(userID, transactions.CreateTransactionInput{
+		UserID:      userID,
 		Title:       "Transferencia recibida",
 		Amount:      input.Amount,
 		Type:        transactions.Income,

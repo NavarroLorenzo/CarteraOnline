@@ -1,6 +1,10 @@
 package transfers
 
-import "github.com/gin-gonic/gin"
+import (
+	"cartera-app/backend/internal/auth"
+
+	"github.com/gin-gonic/gin"
+)
 
 type Handler struct {
 	service *Service
@@ -11,6 +15,11 @@ func NewHandler(service *Service) *Handler {
 }
 
 func (h *Handler) Create(c *gin.Context) {
+	userID, ok := auth.AbortIfUnauthenticated(c)
+	if !ok {
+		return
+	}
+
 	var input CreateTransferInput
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -21,7 +30,7 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	err := h.service.CreateTransfer(input)
+	err := h.service.CreateTransfer(userID, input)
 	if err != nil {
 		switch err {
 		case ErrSameAccount:

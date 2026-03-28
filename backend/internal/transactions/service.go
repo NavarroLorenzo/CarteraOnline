@@ -12,7 +12,7 @@ var ErrCannotUpdateTransfer = errors.New("las transacciones de transferencia no 
 const InitialBalanceCategory = "initial_balance"
 
 type AccountFinder interface {
-	ExistsByID(id int64) (bool, error)
+	ExistsByID(userID, id int64) (bool, error)
 }
 
 type AccountBalance struct {
@@ -22,15 +22,15 @@ type AccountBalance struct {
 }
 
 type Service interface {
-	Create(input CreateTransactionInput) (Transaction, error)
-	CreateInitialBalance(accountID int64, amount float64) error
-	GetAll(filters TransactionFilters) ([]Transaction, error)
-	GetByID(id int64) (Transaction, error)
-	Update(id int64, input UpdateTransactionInput) (Transaction, error)
-	Delete(id int64) error
-	GetBalance() (float64, error)
-	GetBalanceByAccountDetailed() ([]AccountBalance, float64, error)
-	GetSummary(filters TransactionFilters) (TransactionSummary, error)
+	Create(userID int64, input CreateTransactionInput) (Transaction, error)
+	CreateInitialBalance(userID, accountID int64, amount float64) error
+	GetAll(userID int64, filters TransactionFilters) ([]Transaction, error)
+	GetByID(userID, id int64) (Transaction, error)
+	Update(userID, id int64, input UpdateTransactionInput) (Transaction, error)
+	Delete(userID, id int64) error
+	GetBalance(userID int64) (float64, error)
+	GetBalanceByAccountDetailed(userID int64) ([]AccountBalance, float64, error)
+	GetSummary(userID int64, filters TransactionFilters) (TransactionSummary, error)
 }
 
 type service struct {
@@ -47,8 +47,8 @@ func NewService(repo Repository, accountFinder AccountFinder, accountSvc account
 	}
 }
 
-func (s *service) Create(input CreateTransactionInput) (Transaction, error) {
-	exists, err := s.accountFinder.ExistsByID(input.AccountID)
+func (s *service) Create(userID int64, input CreateTransactionInput) (Transaction, error) {
+	exists, err := s.accountFinder.ExistsByID(userID, input.AccountID)
 	if err != nil {
 		return Transaction{}, err
 	}
@@ -57,29 +57,30 @@ func (s *service) Create(input CreateTransactionInput) (Transaction, error) {
 		return Transaction{}, ErrAccountNotFound
 	}
 
-	return s.repo.Create(input)
+	input.UserID = userID
+	return s.repo.Create(userID, input)
 }
 
-func (s *service) GetAll(filters TransactionFilters) ([]Transaction, error) {
-	return s.repo.GetAll(filters)
+func (s *service) GetAll(userID int64, filters TransactionFilters) ([]Transaction, error) {
+	return s.repo.GetAll(userID, filters)
 }
 
-func (s *service) GetBalance() (float64, error) {
-	return s.repo.GetBalance()
+func (s *service) GetBalance(userID int64) (float64, error) {
+	return s.repo.GetBalance(userID)
 }
 
-func (s *service) GetBalanceByAccountDetailed() ([]AccountBalance, float64, error) {
-	rawBalances, err := s.repo.GetBalanceByAccount()
+func (s *service) GetBalanceByAccountDetailed(userID int64) ([]AccountBalance, float64, error) {
+	rawBalances, err := s.repo.GetBalanceByAccount(userID)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	accountsList, err := s.accountSvc.GetAll()
+	accountsList, err := s.accountSvc.GetAll(userID)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	var result []AccountBalance
+	result := make([]AccountBalance, 0, len(accountsList))
 
 	for _, acc := range accountsList {
 		result = append(result, AccountBalance{
@@ -89,7 +90,7 @@ func (s *service) GetBalanceByAccountDetailed() ([]AccountBalance, float64, erro
 		})
 	}
 
-	total, err := s.repo.GetBalance()
+	total, err := s.repo.GetBalance(userID)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -97,12 +98,13 @@ func (s *service) GetBalanceByAccountDetailed() ([]AccountBalance, float64, erro
 	return result, total, nil
 }
 
-func (s *service) GetSummary(filters TransactionFilters) (TransactionSummary, error) {
-	return s.repo.GetSummary(filters)
+func (s *service) GetSummary(userID int64, filters TransactionFilters) (TransactionSummary, error) {
+	return s.repo.GetSummary(userID, filters)
 }
 
-func (s *service) CreateInitialBalance(accountID int64, amount float64) error {
-	_, err := s.repo.Create(CreateTransactionInput{
+func (s *service) CreateInitialBalance(userID, accountID int64, amount float64) error {
+	_, err := s.repo.Create(userID, CreateTransactionInput{
+		UserID:      userID,
 		Title:       "Saldo inicial",
 		Amount:      amount,
 		Type:        Income,
@@ -113,8 +115,8 @@ func (s *service) CreateInitialBalance(accountID int64, amount float64) error {
 	return err
 }
 
-func (s *service) GetByID(id int64) (Transaction, error) {
-	transaction, found, err := s.repo.GetByID(id)
+func (s *service) GetByID(userID, id int64) (Transaction, error) {
+	transaction, found, err := s.repo.GetByID(userID, id)
 	if err != nil {
 		return Transaction{}, err
 	}
@@ -124,8 +126,8 @@ func (s *service) GetByID(id int64) (Transaction, error) {
 	return transaction, nil
 }
 
-func (s *service) Update(id int64, input UpdateTransactionInput) (Transaction, error) {
-	exists, err := s.accountFinder.ExistsByID(input.AccountID)
+func (s *service) Update(userID, id int64, input UpdateTransactionInput) (Transaction, error) {
+	exists, err := s.accountFinder.ExistsByID(userID, input.AccountID)
 	if err != nil {
 		return Transaction{}, err
 	}
@@ -133,7 +135,7 @@ func (s *service) Update(id int64, input UpdateTransactionInput) (Transaction, e
 		return Transaction{}, ErrAccountNotFound
 	}
 
-	current, found, err := s.repo.GetByID(id)
+	current, found, err := s.repo.GetByID(userID, id)
 	if err != nil {
 		return Transaction{}, err
 	}
@@ -145,11 +147,11 @@ func (s *service) Update(id int64, input UpdateTransactionInput) (Transaction, e
 		return Transaction{}, ErrCannotUpdateTransfer
 	}
 
-	return s.repo.Update(id, input)
+	return s.repo.Update(userID, id, input)
 }
 
-func (s *service) Delete(id int64) error {
-	current, found, err := s.repo.GetByID(id)
+func (s *service) Delete(userID, id int64) error {
+	current, found, err := s.repo.GetByID(userID, id)
 	if err != nil {
 		return err
 	}
@@ -158,8 +160,8 @@ func (s *service) Delete(id int64) error {
 	}
 
 	if current.TransferID != nil {
-		return s.repo.DeleteByTransferID(*current.TransferID)
+		return s.repo.DeleteByTransferID(userID, *current.TransferID)
 	}
 
-	return s.repo.Delete(id)
+	return s.repo.Delete(userID, id)
 }
