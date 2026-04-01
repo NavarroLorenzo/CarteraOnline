@@ -1,6 +1,13 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { buttonHover, delayedTransition, fadeUp } from "./motion";
+import { scrollToSection } from "./scroll";
+
+const sections = [
+  { id: "funcionalidades", label: "Funcionalidades" },
+  { id: "como-funciona", label: "Cómo funciona" },
+  { id: "cta-final", label: "Empezar" },
+];
 
 export function LandingHeader() {
   return (
@@ -20,9 +27,18 @@ export function LandingHeader() {
       </Link>
 
       <nav className="landing-nav__links" aria-label="Navegación principal">
-        <a href="#funcionalidades">Funcionalidades</a>
-        <a href="#como-funciona">Cómo funciona</a>
-        <a href="#cta-final">Empezar</a>
+        {sections.map((section) => (
+          <a
+            key={section.id}
+            href={`#${section.id}`}
+            onClick={(event) => {
+              event.preventDefault();
+              scrollToSection(section.id);
+            }}
+          >
+            {section.label}
+          </a>
+        ))}
       </nav>
 
       <div className="landing-nav__actions">

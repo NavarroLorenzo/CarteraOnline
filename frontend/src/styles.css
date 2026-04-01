@@ -232,17 +232,39 @@ textarea {
   padding: clamp(1.5rem, 4vw, 2.5rem);
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .auth-panel__actions {
   display: flex;
   justify-content: flex-start;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .auth-back-button {
   width: fit-content;
+}
+
+.auth-panel--form-login {
+  padding-top: clamp(1.3rem, 3vw, 2rem);
+}
+
+.auth-form__header {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 1.35rem;
+}
+
+.auth-form__header h2 {
+  margin: 0.2rem 0 0;
+  font-family: "Space Grotesk", "Instrument Sans", sans-serif;
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+
+.auth-form__header p {
+  margin: 0;
+  max-width: 34rem;
+  color: var(--ink-soft);
 }
 
 .panel-heading h2,
@@ -745,6 +767,7 @@ textarea {
   display: grid;
   gap: 1.4rem;
   padding: 3rem 0 0.25rem;
+  scroll-margin-top: 6.8rem;
 }
 
 .landing-section__intro {
@@ -849,6 +872,7 @@ textarea {
   background:
     radial-gradient(circle at top right, rgba(240, 101, 67, 0.14), transparent 18rem),
     linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(255, 248, 241, 0.84));
+  scroll-margin-top: 6.8rem;
 }
 
 .landing-cta__button {

@@ -42,8 +42,8 @@ export function RegisterPage() {
         </p>
       </section>
 
-      <section className="auth-panel auth-panel--form">
-        <div className="panel-heading">
+      <section className="auth-panel auth-panel--form auth-panel--form-register">
+        <div className="auth-form__header">
           <span className="eyebrow">Registro</span>
           <h2>Nuevo usuario</h2>
           <p>Completá tus datos para entrar directo a tu panel personal.</p>

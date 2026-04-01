@@ -58,14 +58,14 @@ export function LoginPage() {
         </div>
       </section>
 
-      <section className="auth-panel auth-panel--form">
+      <section className="auth-panel auth-panel--form auth-panel--form-login">
         <div className="auth-panel__actions">
           <Link to="/" className="ghost-button auth-back-button">
             Volver al inicio
           </Link>
         </div>
 
-        <div className="panel-heading">
+        <div className="auth-form__header">
           <span className="eyebrow">Login</span>
           <h2>Bienvenido de nuevo</h2>
           <p>Podés ingresar con tu email o con tu nombre de usuario.</p>
