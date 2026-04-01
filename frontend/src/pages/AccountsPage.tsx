@@ -1,8 +1,19 @@
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { accountsApi } from "../api/accounts";
 import { ApiError } from "../api/client";
 import { EmptyState } from "../components/ui/EmptyState";
-import { formatDate } from "../lib/format";
+import { AnimatedSelect } from "../components/ui/AnimatedSelect";
+import {
+  PresenceMessage,
+  Reveal,
+  StaggerGroup,
+  cardHover,
+  fadeLeft,
+  fadeRight,
+  fadeUp,
+} from "../components/ui/animation";
+import { formatAccountTypeLabel, formatDate } from "../lib/format";
 import type { Account } from "../types/api";
 
 const accountTypes = [
@@ -11,6 +22,11 @@ const accountTypes = [
   { value: "virtual_wallet", label: "Billetera virtual" },
   { value: "credit_card", label: "Tarjeta de crédito" },
   { value: "savings", label: "Ahorro" },
+];
+
+const accountStatusOptions = [
+  { value: "active", label: "Activa" },
+  { value: "inactive", label: "Inactiva" },
 ];
 
 export function AccountsPage() {
@@ -133,16 +149,18 @@ export function AccountsPage() {
 
   return (
     <div className="page-stack">
-      <section className="page-header">
-        <div>
-          <span className="eyebrow">Cuentas</span>
-          <h1>Administrá tus cuentas personales</h1>
-          <p>Organizá tu dinero entre efectivo, bancos, billeteras virtuales, tarjetas o ahorro.</p>
-        </div>
-      </section>
+      <Reveal>
+        <section className="page-header">
+          <div>
+            <span className="eyebrow">Cuentas</span>
+            <h1>Administrá tus cuentas personales</h1>
+            <p>Organizá tu dinero entre efectivo, bancos, billeteras virtuales, tarjetas o ahorro.</p>
+          </div>
+        </section>
+      </Reveal>
 
-      <section className="content-grid">
-        <article className="panel">
+      <StaggerGroup className="content-grid">
+        <motion.article className="panel" variants={fadeLeft}>
           <div className="panel-heading">
             <div>
               <span className="eyebrow">{editingAccountId !== null ? "Editar cuenta" : "Nueva cuenta"}</span>
@@ -169,13 +187,12 @@ export function AccountsPage() {
 
             <label className="field">
               <span>Tipo</span>
-              <select value={type} onChange={(event) => setType(event.target.value)}>
-                {accountTypes.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <AnimatedSelect
+                value={type}
+                options={accountTypes}
+                onChange={setType}
+                ariaLabel="Tipo de cuenta"
+              />
             </label>
 
             <label className="field">
@@ -190,24 +207,34 @@ export function AccountsPage() {
               />
             </label>
 
-            {editingAccountId !== null ? (
-              <p className="feedback feedback--warning">
-                Podés cambiar el nombre, el tipo y el estado. El saldo se mantiene según los movimientos ya registrados.
-              </p>
-            ) : null}
+            <AnimatePresence initial={false}>
+              {editingAccountId !== null ? (
+                <motion.div
+                  className="stack-form__cluster"
+                  initial={{ opacity: 0, height: 0, y: 10 }}
+                  animate={{ opacity: 1, height: "auto", y: 0 }}
+                  exit={{ opacity: 0, height: 0, y: -8 }}
+                  transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <p className="feedback feedback--warning">
+                    Podés cambiar el nombre, el tipo y el estado. El saldo se mantiene según los movimientos ya registrados.
+                  </p>
 
-            {editingAccountId !== null ? (
-              <label className="field">
-                <span>Estado</span>
-                <select value={isActive ? "active" : "inactive"} onChange={(event) => setIsActive(event.target.value === "active")}>
-                  <option value="active">Activa</option>
-                  <option value="inactive">Inactiva</option>
-                </select>
-              </label>
-            ) : null}
+                  <label className="field">
+                    <span>Estado</span>
+                    <AnimatedSelect
+                      value={isActive ? "active" : "inactive"}
+                      options={accountStatusOptions}
+                      onChange={(value) => setIsActive(value === "active")}
+                      ariaLabel="Estado de la cuenta"
+                    />
+                  </label>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
 
-            {error ? <p className="feedback feedback--error">{error}</p> : null}
-            {success ? <p className="feedback feedback--success">{success}</p> : null}
+            <PresenceMessage className="feedback feedback--error">{error}</PresenceMessage>
+            <PresenceMessage className="feedback feedback--success">{success}</PresenceMessage>
 
             <button type="submit" className="primary-button" disabled={submitting}>
               {submitting
@@ -217,9 +244,9 @@ export function AccountsPage() {
                   : "Crear cuenta"}
             </button>
           </form>
-        </article>
+        </motion.article>
 
-        <article className="panel">
+        <motion.article className="panel" variants={fadeRight}>
           <div className="panel-heading">
             <div>
               <span className="eyebrow">Resumen</span>
@@ -238,13 +265,19 @@ export function AccountsPage() {
               description="Creá una cuenta para empezar a separar tu dinero por origen o uso."
             />
           ) : (
-            <div className="stack-list">
+            <StaggerGroup className="stack-list">
               {accounts.map((account) => (
-                <div key={account.id} className="list-row">
+                <motion.div
+                  key={account.id}
+                  className="list-row"
+                  variants={fadeUp}
+                  whileHover={cardHover}
+                  layout
+                >
                   <div>
                     <strong>{account.name}</strong>
                     <p>
-                      {account.type} · {account.is_active ? "activa" : "inactiva"}
+                      {formatAccountTypeLabel(account.type)} · {account.is_active ? "activa" : "inactiva"}
                     </p>
                   </div>
                   <div className="list-row__meta">
@@ -266,12 +299,12 @@ export function AccountsPage() {
                       </button>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </StaggerGroup>
           )}
-        </article>
-      </section>
+        </motion.article>
+      </StaggerGroup>
     </div>
   );
 }

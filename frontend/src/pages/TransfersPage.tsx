@@ -1,9 +1,20 @@
+import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { accountsApi } from "../api/accounts";
 import { ApiError } from "../api/client";
 import { transactionsApi } from "../api/transactions";
 import { transfersApi } from "../api/transfers";
 import { EmptyState } from "../components/ui/EmptyState";
+import { AnimatedSelect } from "../components/ui/AnimatedSelect";
+import {
+  PresenceMessage,
+  Reveal,
+  StaggerGroup,
+  cardHover,
+  fadeLeft,
+  fadeRight,
+  fadeUp,
+} from "../components/ui/animation";
 import { formatCurrency, formatDate } from "../lib/format";
 import type { Account, Transaction } from "../types/api";
 
@@ -21,6 +32,10 @@ export function TransfersPage() {
 
   const accountMap = useMemo(
     () => new Map(accounts.map((account) => [account.id, account.name])),
+    [accounts],
+  );
+  const accountOptions = useMemo(
+    () => accounts.map((account) => ({ value: String(account.id), label: account.name })),
     [accounts],
   );
 
@@ -88,16 +103,18 @@ export function TransfersPage() {
 
   return (
     <div className="page-stack">
-      <section className="page-header">
-        <div>
-          <span className="eyebrow">Transferencias</span>
-          <h1>Mover saldo entre tus cuentas</h1>
-          <p>Pasá dinero entre tus cuentas y seguí el registro de cada movimiento generado por la transferencia.</p>
-        </div>
-      </section>
+      <Reveal>
+        <section className="page-header">
+          <div>
+            <span className="eyebrow">Transferencias</span>
+            <h1>Mover saldo entre tus cuentas</h1>
+            <p>Pasá dinero entre tus cuentas y seguí el registro de cada movimiento generado por la transferencia.</p>
+          </div>
+        </section>
+      </Reveal>
 
-      <section className="content-grid">
-        <article className="panel">
+      <StaggerGroup className="content-grid">
+        <motion.article className="panel" variants={fadeLeft}>
           <div className="panel-heading">
             <div>
               <span className="eyebrow">Nueva transferencia</span>
@@ -108,34 +125,26 @@ export function TransfersPage() {
           <form className="stack-form" onSubmit={handleSubmit}>
             <label className="field">
               <span>Cuenta origen</span>
-              <select
+              <AnimatedSelect
                 value={fromAccountId}
-                onChange={(event) => setFromAccountId(event.target.value)}
-                required
+                options={accountOptions}
+                onChange={setFromAccountId}
+                placeholder={accounts.length < 2 ? "Necesitás al menos dos cuentas" : "Elegí una cuenta"}
                 disabled={accounts.length < 2}
-              >
-                {accounts.map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {account.name}
-                  </option>
-                ))}
-              </select>
+                ariaLabel="Cuenta origen"
+              />
             </label>
 
             <label className="field">
               <span>Cuenta destino</span>
-              <select
+              <AnimatedSelect
                 value={toAccountId}
-                onChange={(event) => setToAccountId(event.target.value)}
-                required
+                options={accountOptions}
+                onChange={setToAccountId}
+                placeholder={accounts.length < 2 ? "Necesitás al menos dos cuentas" : "Elegí una cuenta"}
                 disabled={accounts.length < 2}
-              >
-                {accounts.map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {account.name}
-                  </option>
-                ))}
-              </select>
+                ariaLabel="Cuenta destino"
+              />
             </label>
 
             <label className="field">
@@ -165,8 +174,8 @@ export function TransfersPage() {
                 Necesitás al menos dos cuentas para poder transferir.
               </p>
             ) : null}
-            {error ? <p className="feedback feedback--error">{error}</p> : null}
-            {success ? <p className="feedback feedback--success">{success}</p> : null}
+            <PresenceMessage className="feedback feedback--error">{error}</PresenceMessage>
+            <PresenceMessage className="feedback feedback--success">{success}</PresenceMessage>
 
             <button
               type="submit"
@@ -176,9 +185,9 @@ export function TransfersPage() {
               {submitting ? "Enviando..." : "Registrar transferencia"}
             </button>
           </form>
-        </article>
+        </motion.article>
 
-        <article className="panel">
+        <motion.article className="panel" variants={fadeRight}>
           <div className="panel-heading">
             <div>
               <span className="eyebrow">Historial</span>
@@ -197,9 +206,15 @@ export function TransfersPage() {
               description="Cuando hagas la primera, vas a verla reflejada en las cuentas involucradas."
             />
           ) : (
-            <div className="stack-list">
+            <StaggerGroup className="stack-list">
               {orderedTransfers.map((transaction) => (
-                <div key={transaction.id} className="list-row list-row--transaction">
+                <motion.div
+                  key={transaction.id}
+                  className="list-row list-row--transaction"
+                  variants={fadeUp}
+                  whileHover={cardHover}
+                  layout
+                >
                   <div>
                     <strong>{transaction.title}</strong>
                     <p>{accountMap.get(transaction.account_id) ?? `Cuenta ${transaction.account_id}`}</p>
@@ -210,12 +225,12 @@ export function TransfersPage() {
                     <strong>{formatCurrency(transaction.amount)}</strong>
                     <span>{formatDate(transaction.created_at)}</span>
                   </div>
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </StaggerGroup>
           )}
-        </article>
-      </section>
+        </motion.article>
+      </StaggerGroup>
     </div>
   );
 }

@@ -1,3 +1,6 @@
+import { motion } from "framer-motion";
+import { cardHover, fadeUp } from "./animation";
+
 type MetricCardProps = {
   label: string;
   value: string;
@@ -6,9 +9,13 @@ type MetricCardProps = {
 
 export function MetricCard({ label, value, tone = "default" }: MetricCardProps) {
   return (
-    <article className={`metric-card metric-card--${tone}`}>
+    <motion.article
+      className={`metric-card metric-card--${tone}`}
+      variants={fadeUp}
+      whileHover={cardHover}
+    >
       <span>{label}</span>
       <strong>{value}</strong>
-    </article>
+    </motion.article>
   );
 }

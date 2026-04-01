@@ -1,10 +1,26 @@
+import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { accountsApi } from "../api/accounts";
 import { ApiError } from "../api/client";
 import { transactionsApi, type TransactionFilters } from "../api/transactions";
 import { EmptyState } from "../components/ui/EmptyState";
+import { AnimatedSelect } from "../components/ui/AnimatedSelect";
+import {
+  PresenceMessage,
+  Reveal,
+  StaggerGroup,
+  cardHover,
+  fadeLeft,
+  fadeRight,
+  fadeUp,
+} from "../components/ui/animation";
 import { formatCurrency, formatDate, formatTypeLabel } from "../lib/format";
 import type { Account, Transaction, TransactionType } from "../types/api";
+
+const transactionTypeOptions = [
+  { value: "income", label: "Ingreso" },
+  { value: "expense", label: "Gasto" },
+];
 
 export function TransactionsPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -31,6 +47,18 @@ export function TransactionsPage() {
   const accountMap = useMemo(
     () => new Map(accounts.map((account) => [account.id, account.name])),
     [accounts],
+  );
+  const accountOptions = useMemo(
+    () => accounts.map((account) => ({ value: String(account.id), label: account.name })),
+    [accounts],
+  );
+  const filterAccountOptions = useMemo(
+    () => [{ value: "", label: "Todas" }, ...accountOptions],
+    [accountOptions],
+  );
+  const filterTypeOptions = useMemo(
+    () => [{ value: "", label: "Todos" }, ...transactionTypeOptions],
+    [],
   );
 
   const loadInitialData = async () => {
@@ -129,16 +157,18 @@ export function TransactionsPage() {
 
   return (
     <div className="page-stack">
-      <section className="page-header">
-        <div>
-          <span className="eyebrow">Transacciones</span>
-          <h1>Registrá y consultá tus movimientos</h1>
-          <p>Guardá ingresos y gastos, filtralos por cuenta o fecha y revisá tu historial cuando lo necesites.</p>
-        </div>
-      </section>
+      <Reveal>
+        <section className="page-header">
+          <div>
+            <span className="eyebrow">Transacciones</span>
+            <h1>Registrá y consultá tus movimientos</h1>
+            <p>Guardá ingresos y gastos, filtralos por cuenta o fecha y revisá tu historial cuando lo necesites.</p>
+          </div>
+        </section>
+      </Reveal>
 
-      <section className="content-grid content-grid--wide">
-        <article className="panel">
+      <StaggerGroup className="content-grid content-grid--wide">
+        <motion.article className="panel" variants={fadeLeft}>
           <div className="panel-heading">
             <div>
               <span className="eyebrow">Nueva transacción</span>
@@ -173,28 +203,25 @@ export function TransactionsPage() {
 
               <label className="field">
                 <span>Tipo</span>
-                <select value={type} onChange={(event) => setType(event.target.value as TransactionType)}>
-                  <option value="income">Ingreso</option>
-                  <option value="expense">Gasto</option>
-                </select>
+                <AnimatedSelect
+                  value={type}
+                  options={transactionTypeOptions}
+                  onChange={(value) => setType(value as TransactionType)}
+                  ariaLabel="Tipo de transacción"
+                />
               </label>
             </div>
 
             <label className="field">
               <span>Cuenta</span>
-              <select
+              <AnimatedSelect
                 value={accountId}
-                onChange={(event) => setAccountId(event.target.value)}
-                required
+                options={accountOptions}
+                onChange={setAccountId}
+                placeholder={accounts.length === 0 ? "Primero creá una cuenta" : "Seleccioná una cuenta"}
                 disabled={accounts.length === 0}
-              >
-                {accounts.length === 0 ? <option value="">Primero creá una cuenta</option> : null}
-                {accounts.map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {account.name}
-                  </option>
-                ))}
-              </select>
+                ariaLabel="Cuenta"
+              />
             </label>
 
             <label className="field">
@@ -217,8 +244,8 @@ export function TransactionsPage() {
               />
             </label>
 
-            {error ? <p className="feedback feedback--error">{error}</p> : null}
-            {success ? <p className="feedback feedback--success">{success}</p> : null}
+            <PresenceMessage className="feedback feedback--error">{error}</PresenceMessage>
+            <PresenceMessage className="feedback feedback--success">{success}</PresenceMessage>
 
             <button
               type="submit"
@@ -228,9 +255,9 @@ export function TransactionsPage() {
               {submitting ? "Guardando..." : "Guardar movimiento"}
             </button>
           </form>
-        </article>
+        </motion.article>
 
-        <article className="panel">
+        <motion.article className="panel" variants={fadeRight}>
           <div className="panel-heading">
             <div>
               <span className="eyebrow">Historial</span>
@@ -242,39 +269,32 @@ export function TransactionsPage() {
             <div className="field-grid">
               <label className="field">
                 <span>Cuenta</span>
-                <select
-                  value={filters.account_id ?? ""}
-                  onChange={(event) =>
+                <AnimatedSelect
+                  value={filters.account_id ? String(filters.account_id) : ""}
+                  options={filterAccountOptions}
+                  onChange={(value) =>
                     setFilters((current) => ({
                       ...current,
-                      account_id: event.target.value ? Number(event.target.value) : undefined,
+                      account_id: value ? Number(value) : undefined,
                     }))
                   }
-                >
-                  <option value="">Todas</option>
-                  {accounts.map((account) => (
-                    <option key={account.id} value={account.id}>
-                      {account.name}
-                    </option>
-                  ))}
-                </select>
+                  ariaLabel="Filtrar por cuenta"
+                />
               </label>
 
               <label className="field">
                 <span>Tipo</span>
-                <select
+                <AnimatedSelect
                   value={filters.type ?? ""}
-                  onChange={(event) =>
+                  options={filterTypeOptions}
+                  onChange={(value) =>
                     setFilters((current) => ({
                       ...current,
-                      type: event.target.value as TransactionType | "",
+                      type: value as TransactionType | "",
                     }))
                   }
-                >
-                  <option value="">Todos</option>
-                  <option value="income">Ingreso</option>
-                  <option value="expense">Gasto</option>
-                </select>
+                  ariaLabel="Filtrar por tipo"
+                />
               </label>
             </div>
 
@@ -353,9 +373,15 @@ export function TransactionsPage() {
               description="Probá ajustando los filtros o registrando un movimiento nuevo."
             />
           ) : (
-            <div className="stack-list">
+            <StaggerGroup className="stack-list">
               {orderedTransactions.map((transaction) => (
-                <div key={transaction.id} className="list-row list-row--transaction">
+                <motion.div
+                  key={transaction.id}
+                  className="list-row list-row--transaction"
+                  variants={fadeUp}
+                  whileHover={cardHover}
+                  layout
+                >
                   <div>
                     <strong>{transaction.title}</strong>
                     <p>
@@ -376,12 +402,12 @@ export function TransactionsPage() {
                       Eliminar
                     </button>
                   </div>
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </StaggerGroup>
           )}
-        </article>
-      </section>
+        </motion.article>
+      </StaggerGroup>
     </div>
   );
 }

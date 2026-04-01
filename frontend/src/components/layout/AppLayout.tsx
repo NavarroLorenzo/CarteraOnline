@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { useAuth } from "../../auth/AuthContext";
+import { RouteTransition } from "../ui/animation";
 
 export function AppLayout() {
   const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
 
   if (!user) {
     return null;
@@ -42,7 +44,9 @@ export function AppLayout() {
         </header>
 
         <div className="page-content">
-          <Outlet />
+          <RouteTransition routeKey={location.pathname}>
+            <Outlet />
+          </RouteTransition>
         </div>
       </main>
     </div>

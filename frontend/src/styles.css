@@ -50,6 +50,10 @@ body,
   min-height: 100%;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
 }
@@ -231,6 +235,16 @@ textarea {
   justify-content: center;
 }
 
+.auth-panel__actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 1rem;
+}
+
+.auth-back-button {
+  width: fit-content;
+}
+
 .panel-heading h2,
 .page-header h1,
 .hero-card h1,
@@ -272,6 +286,12 @@ textarea {
 .stack-form {
   display: grid;
   gap: 1rem;
+}
+
+.stack-form__cluster {
+  display: grid;
+  gap: 1rem;
+  overflow: hidden;
 }
 
 .stack-form--compact {
@@ -885,6 +905,9 @@ textarea {
 }
 
 .sidebar__link {
+  position: relative;
+  overflow: hidden;
+  display: block;
   padding: 0.92rem 1rem;
   border-radius: 1rem;
   color: rgba(246, 240, 230, 0.78);
@@ -892,13 +915,31 @@ textarea {
   transition:
     border-color 180ms ease,
     background-color 180ms ease,
-    color 180ms ease;
+    color 180ms ease,
+    transform 180ms ease;
 }
 
-.sidebar__link:hover,
-.sidebar__link--active {
+.sidebar__link-pill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(240, 101, 67, 0.18));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebar__link-label {
+  position: relative;
+  z-index: 1;
+}
+
+.sidebar__link:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.08);
+  color: #fffaf3;
+  transform: translateX(4px);
+}
+
+.sidebar__link--active {
   color: #fffaf3;
 }
 
@@ -957,6 +998,10 @@ textarea {
   gap: 1.2rem;
 }
 
+.page-content > div {
+  min-width: 0;
+}
+
 .hero-card,
 .panel,
 .page-header {
@@ -970,12 +1015,24 @@ textarea {
 .page-header,
 .panel {
   padding: 1.45rem;
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease,
+    border-color 220ms ease,
+    background-color 220ms ease;
 }
 
 .hero-card {
   background:
     radial-gradient(circle at top right, rgba(240, 101, 67, 0.12), transparent 18rem),
     linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 250, 244, 0.8));
+}
+
+.hero-card:hover,
+.panel:hover {
+  transform: translateY(-2px);
+  border-color: rgba(240, 101, 67, 0.14);
+  box-shadow: 0 22px 42px rgba(52, 41, 20, 0.12);
 }
 
 .metrics-grid {
@@ -991,6 +1048,15 @@ textarea {
   border: 1px solid rgba(16, 33, 29, 0.07);
   display: grid;
   gap: 0.55rem;
+  transition:
+    box-shadow 220ms ease,
+    border-color 220ms ease,
+    background-color 220ms ease;
+}
+
+.metric-card:hover {
+  border-color: rgba(240, 101, 67, 0.14);
+  box-shadow: 0 20px 36px rgba(52, 41, 20, 0.1);
 }
 
 .metric-card span {
@@ -1040,6 +1106,16 @@ textarea {
   border-radius: var(--radius-md);
   border: 1px solid rgba(16, 33, 29, 0.08);
   background: rgba(255, 255, 255, 0.56);
+  transition:
+    border-color 200ms ease,
+    background-color 200ms ease,
+    box-shadow 200ms ease;
+}
+
+.list-row:hover {
+  border-color: rgba(240, 101, 67, 0.16);
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 16px 30px rgba(52, 41, 20, 0.08);
 }
 
 .list-row strong {
@@ -1076,6 +1152,16 @@ textarea {
   border-radius: 999px;
   background: rgba(16, 33, 29, 0.06);
   border: 1px solid rgba(16, 33, 29, 0.08);
+  transition:
+    border-color 200ms ease,
+    background-color 200ms ease,
+    box-shadow 200ms ease;
+}
+
+.pill:hover {
+  border-color: rgba(240, 101, 67, 0.16);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 14px 26px rgba(52, 41, 20, 0.08);
 }
 
 .empty-state {
@@ -1083,6 +1169,16 @@ textarea {
   border-radius: var(--radius-md);
   background: rgba(16, 33, 29, 0.04);
   border: 1px dashed rgba(16, 33, 29, 0.16);
+  transition:
+    transform 220ms ease,
+    border-color 220ms ease,
+    background-color 220ms ease;
+}
+
+.empty-state:hover {
+  transform: translateY(-2px);
+  border-color: rgba(240, 101, 67, 0.16);
+  background: rgba(255, 255, 255, 0.62);
 }
 
 .empty-state h3 {
@@ -1110,6 +1206,125 @@ textarea {
   background: transparent;
   color: var(--negative);
   font-weight: 700;
+  transition:
+    transform 180ms ease,
+    color 180ms ease;
+}
+
+.danger-link:hover {
+  transform: translateY(-1px);
+  color: #b2331a;
+}
+
+.animated-select {
+  position: relative;
+}
+
+.animated-select__trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem;
+  padding: 0.92rem 1rem;
+  border: 1px solid rgba(16, 33, 29, 0.12);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--ink);
+  box-shadow: none;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+}
+
+.animated-select__trigger:hover {
+  border-color: rgba(240, 101, 67, 0.22);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.animated-select__trigger:focus-visible,
+.animated-select--open .animated-select__trigger {
+  outline: none;
+  border-color: rgba(240, 101, 67, 0.72);
+  box-shadow: 0 0 0 4px rgba(240, 101, 67, 0.12);
+}
+
+.animated-select__value {
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.animated-select__caret {
+  flex-shrink: 0;
+  color: var(--ink-soft);
+}
+
+.animated-select__menu {
+  position: absolute;
+  top: calc(100% + 0.55rem);
+  left: 0;
+  z-index: 20;
+  width: 100%;
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.45rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(16, 33, 29, 0.1);
+  background: rgba(255, 252, 247, 0.96);
+  box-shadow: 0 20px 38px rgba(52, 41, 20, 0.14);
+  backdrop-filter: blur(16px);
+}
+
+.animated-select__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  width: 100%;
+  padding: 0.82rem 0.9rem;
+  border: 0;
+  border-radius: 0.95rem;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+}
+
+.animated-select__option:hover,
+.animated-select__option--selected {
+  background: rgba(240, 101, 67, 0.1);
+}
+
+.animated-select__option small {
+  color: var(--accent);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.animated-select--disabled .animated-select__trigger {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
+.animated-select--disabled .animated-select__trigger:hover {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 @media (max-width: 1080px) {

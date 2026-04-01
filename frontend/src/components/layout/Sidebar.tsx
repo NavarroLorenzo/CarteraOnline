@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { NavLink } from "react-router-dom";
 
 const navItems = [
@@ -34,7 +35,18 @@ export function Sidebar({ username, email, onNavigate }: SidebarProps) {
             }
             onClick={onNavigate}
           >
-            {item.label}
+            {({ isActive }) => (
+              <>
+                {isActive ? (
+                  <motion.span
+                    layoutId="sidebar-active-pill"
+                    className="sidebar__link-pill"
+                    transition={{ type: "spring", stiffness: 360, damping: 32 }}
+                  />
+                ) : null}
+                <span className="sidebar__link-label">{item.label}</span>
+              </>
+            )}
           </NavLink>
         ))}
       </nav>

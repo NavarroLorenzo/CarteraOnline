@@ -1,10 +1,20 @@
+import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { accountsApi } from "../api/accounts";
 import { ApiError } from "../api/client";
 import { transactionsApi } from "../api/transactions";
 import { MetricCard } from "../components/ui/MetricCard";
 import { EmptyState } from "../components/ui/EmptyState";
-import { formatCurrency, formatDate, formatTypeLabel } from "../lib/format";
+import {
+  PresenceMessage,
+  Reveal,
+  StaggerGroup,
+  cardHover,
+  fadeLeft,
+  fadeRight,
+  fadeUp,
+} from "../components/ui/animation";
+import { formatAccountTypeLabel, formatCurrency, formatDate, formatTypeLabel } from "../lib/format";
 import type { Account, AccountBalance, Transaction, TransactionSummary } from "../types/api";
 
 export function DashboardPage() {
@@ -68,19 +78,21 @@ export function DashboardPage() {
 
   return (
     <div className="page-stack">
-      <section className="hero-card">
-        <div>
-          <span className="eyebrow">Dashboard</span>
-          <h1>Tu panorama financiero de hoy</h1>
-          <p>
-            Revisá el balance total, el resultado de tus movimientos y la actividad reciente de cada cuenta.
-          </p>
-        </div>
-      </section>
+      <Reveal>
+        <section className="hero-card">
+          <div>
+            <span className="eyebrow">Dashboard</span>
+            <h1>Tu panorama financiero de hoy</h1>
+            <p>
+              Revisá el balance total, el resultado de tus movimientos y la actividad reciente de cada cuenta.
+            </p>
+          </div>
+        </section>
+      </Reveal>
 
-      {error ? <p className="feedback feedback--error">{error}</p> : null}
+      <PresenceMessage className="feedback feedback--error">{error}</PresenceMessage>
 
-      <section className="metrics-grid">
+      <StaggerGroup className="metrics-grid">
         <MetricCard
           label="Balance total"
           value={loading ? "Cargando..." : formatCurrency(totalBalance)}
@@ -100,10 +112,10 @@ export function DashboardPage() {
           label="Movimientos"
           value={summary ? String(summary.transactions_count) : "Cargando..."}
         />
-      </section>
+      </StaggerGroup>
 
-      <section className="dashboard-grid">
-        <article className="panel">
+      <StaggerGroup className="dashboard-grid">
+        <motion.article className="panel" variants={fadeLeft}>
           <div className="panel-heading">
             <div>
               <span className="eyebrow">Cuentas</span>
@@ -117,21 +129,26 @@ export function DashboardPage() {
               description="Creá tu primera cuenta desde la sección Cuentas para empezar."
             />
           ) : (
-            <div className="stack-list">
+            <StaggerGroup className="stack-list">
               {balances.map((account) => (
-                <div key={account.id} className="list-row">
+                <motion.div
+                  key={account.id}
+                  className="list-row"
+                  variants={fadeUp}
+                  whileHover={cardHover}
+                >
                   <div>
                     <strong>{account.name}</strong>
                     <p>Cuenta #{account.id}</p>
                   </div>
                   <strong>{formatCurrency(account.balance)}</strong>
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </StaggerGroup>
           )}
-        </article>
+        </motion.article>
 
-        <article className="panel">
+        <motion.article className="panel" variants={fadeRight}>
           <div className="panel-heading">
             <div>
               <span className="eyebrow">Actividad</span>
@@ -145,9 +162,14 @@ export function DashboardPage() {
               description="Cuando registres ingresos o gastos, van a aparecer acá."
             />
           ) : (
-            <div className="stack-list">
+            <StaggerGroup className="stack-list">
               {recentTransactions.map((transaction) => (
-                <div key={transaction.id} className="list-row list-row--transaction">
+                <motion.div
+                  key={transaction.id}
+                  className="list-row list-row--transaction"
+                  variants={fadeUp}
+                  whileHover={cardHover}
+                >
                   <div>
                     <strong>{transaction.title}</strong>
                     <p>
@@ -158,36 +180,43 @@ export function DashboardPage() {
                     <strong>{formatCurrency(transaction.amount)}</strong>
                     <span>{formatDate(transaction.created_at)}</span>
                   </div>
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </StaggerGroup>
           )}
-        </article>
-      </section>
+        </motion.article>
+      </StaggerGroup>
 
-      <section className="panel">
-        <div className="panel-heading">
-          <div>
-            <span className="eyebrow">Vista general</span>
-            <h2>Cuentas disponibles</h2>
+      <Reveal>
+        <section className="panel">
+          <div className="panel-heading">
+            <div>
+              <span className="eyebrow">Vista general</span>
+              <h2>Cuentas disponibles</h2>
+            </div>
           </div>
-        </div>
 
-        {accounts.length === 0 ? (
-          <EmptyState
-            title="No hay cuentas para mostrar"
-            description="Creá una cuenta nueva para empezar a ver tu cartera resumida acá."
-          />
-        ) : (
-          <div className="pill-list">
-            {accounts.map((account) => (
-              <span key={account.id} className="pill">
-                {account.name} · {account.type}
-              </span>
-            ))}
-          </div>
-        )}
-      </section>
+          {accounts.length === 0 ? (
+            <EmptyState
+              title="No hay cuentas para mostrar"
+              description="Creá una cuenta nueva para empezar a ver tu cartera resumida acá."
+            />
+          ) : (
+            <StaggerGroup className="pill-list">
+              {accounts.map((account) => (
+                <motion.span
+                  key={account.id}
+                  className="pill"
+                  variants={fadeUp}
+                  whileHover={cardHover}
+                >
+                  {account.name} · {formatAccountTypeLabel(account.type)}
+                </motion.span>
+              ))}
+            </StaggerGroup>
+          )}
+        </section>
+      </Reveal>
     </div>
   );
 }
