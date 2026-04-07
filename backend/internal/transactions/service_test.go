@@ -200,7 +200,7 @@ func TestDeleteOtherUserTransactionReturnsNotFound(t *testing.T) {
 	}
 }
 
-func TestGetDashboardBuildsAnalyticsExcludingTransfersAndInitialBalance(t *testing.T) {
+func TestGetDashboardBuildsAnalyticsExcludingTransfersButKeepingInitialBalance(t *testing.T) {
 	repo := &fakeTransactionsRepo{
 		transactions: []Transaction{
 			{
@@ -296,14 +296,14 @@ func TestGetDashboardBuildsAnalyticsExcludingTransfersAndInitialBalance(t *testi
 		t.Fatalf("expected nil error, got %v", err)
 	}
 
-	if dashboard.PeriodSummary.IncomeTotal != 3000 {
-		t.Fatalf("expected income total 3000, got %v", dashboard.PeriodSummary.IncomeTotal)
+	if dashboard.PeriodSummary.IncomeTotal != 3900 {
+		t.Fatalf("expected income total 3900, got %v", dashboard.PeriodSummary.IncomeTotal)
 	}
 	if dashboard.PeriodSummary.ExpenseTotal != 620 {
 		t.Fatalf("expected expense total 620, got %v", dashboard.PeriodSummary.ExpenseTotal)
 	}
-	if dashboard.PeriodSummary.NetBalance != 2380 {
-		t.Fatalf("expected net balance 2380, got %v", dashboard.PeriodSummary.NetBalance)
+	if dashboard.PeriodSummary.NetBalance != 3280 {
+		t.Fatalf("expected net balance 3280, got %v", dashboard.PeriodSummary.NetBalance)
 	}
 	if len(dashboard.ExpenseCategories) != 2 {
 		t.Fatalf("expected 2 categories, got %d", len(dashboard.ExpenseCategories))
@@ -320,8 +320,8 @@ func TestGetDashboardBuildsAnalyticsExcludingTransfersAndInitialBalance(t *testi
 	if len(dashboard.RecentTransactions) != 5 {
 		t.Fatalf("expected 5 recent transactions, got %d", len(dashboard.RecentTransactions))
 	}
-	if dashboard.MonthSummary.IncomeTotal != 3000 {
-		t.Fatalf("expected month income total 3000, got %v", dashboard.MonthSummary.IncomeTotal)
+	if dashboard.MonthSummary.IncomeTotal != 3900 {
+		t.Fatalf("expected month income total 3900, got %v", dashboard.MonthSummary.IncomeTotal)
 	}
 	if dashboard.Comparison.PreviousMonth.IncomeTotal != 2500 {
 		t.Fatalf("expected previous month income total 2500, got %v", dashboard.Comparison.PreviousMonth.IncomeTotal)

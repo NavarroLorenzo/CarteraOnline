@@ -242,7 +242,7 @@ func filterDashboardAnalyticsTransactions(transactions []Transaction) []Transact
 }
 
 func isDashboardInternalTransaction(transaction Transaction) bool {
-	return transaction.TransferID != nil || transaction.Category == CategoryTransfer || isInitialBalanceTransaction(transaction)
+	return transaction.TransferID != nil || transaction.Category == CategoryTransfer
 }
 
 func filterTransactionsInRange(transactions []Transaction, dateFrom, dateTo time.Time) []Transaction {
