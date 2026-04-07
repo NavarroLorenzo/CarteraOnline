@@ -5,6 +5,7 @@ import { ApiError } from "../api/client";
 import { transactionsApi, type TransactionFilters } from "../api/transactions";
 import { EmptyState } from "../components/ui/EmptyState";
 import { AnimatedSelect } from "../components/ui/AnimatedSelect";
+import { SelectionGrid } from "../components/ui/SelectionGrid";
 import {
   PresenceMessage,
   Reveal,
@@ -14,16 +15,23 @@ import {
   fadeRight,
   fadeUp,
 } from "../components/ui/animation";
-import { formatCurrency, formatDate, formatTypeLabel } from "../lib/format";
-import type { Account, Transaction, TransactionType } from "../types/api";
+import {
+  formatAccountTypeLabel,
+  formatCategoryKeyLabel,
+  formatCurrency,
+  formatDate,
+  formatTypeLabel,
+} from "../lib/format";
+import type { Account, Transaction, TransactionCategory, TransactionType } from "../types/api";
 
-const transactionTypeOptions = [
-  { value: "income", label: "Ingreso" },
-  { value: "expense", label: "Gasto" },
+const transactionTypeOptions: Array<{ value: TransactionType; label: string; description: string }> = [
+  { value: "income", label: "Ingreso", description: "Entradas de dinero" },
+  { value: "expense", label: "Gasto", description: "Salidas de dinero" },
 ];
 
 export function TransactionsPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [categories, setCategories] = useState<TransactionCategory[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filters, setFilters] = useState<TransactionFilters>({
     type: "",
@@ -48,16 +56,55 @@ export function TransactionsPage() {
     () => new Map(accounts.map((account) => [account.id, account.name])),
     [accounts],
   );
-  const accountOptions = useMemo(
-    () => accounts.map((account) => ({ value: String(account.id), label: account.name })),
+  const categoryMap = useMemo(
+    () => new Map(categories.map((transactionCategory) => [transactionCategory.key, transactionCategory.label])),
+    [categories],
+  );
+
+  const activeAccounts = useMemo(
+    () => accounts.filter((account) => account.is_active),
     [accounts],
   );
-  const filterAccountOptions = useMemo(
-    () => [{ value: "", label: "Todas" }, ...accountOptions],
-    [accountOptions],
+
+  const accountGridOptions = useMemo(
+    () =>
+      activeAccounts.map((account) => ({
+        value: String(account.id),
+        label: account.name,
+        description: formatAccountTypeLabel(account.type),
+      })),
+    [activeAccounts],
   );
+
+  const accountOptions = useMemo(
+    () => [{ value: "", label: "Todas" }, ...accounts.map((account) => ({ value: String(account.id), label: account.name }))],
+    [accounts],
+  );
+
+  const visibleCategories = useMemo(
+    () => categories.filter((transactionCategory) => transactionCategory.allowed_types.includes(type)),
+    [categories, type],
+  );
+
+  const categoryGridOptions = useMemo(
+    () =>
+      visibleCategories.map((transactionCategory) => ({
+        value: transactionCategory.key,
+        label: transactionCategory.label,
+      })),
+    [visibleCategories],
+  );
+
+  const filterCategoryOptions = useMemo(
+    () => [{ value: "", label: "Todas" }, ...categories.map((transactionCategory) => ({
+      value: transactionCategory.key,
+      label: transactionCategory.label,
+    }))],
+    [categories],
+  );
+
   const filterTypeOptions = useMemo(
-    () => [{ value: "", label: "Todos" }, ...transactionTypeOptions],
+    () => [{ value: "", label: "Todos" }, ...transactionTypeOptions.map(({ value, label }) => ({ value, label }))],
     [],
   );
 
@@ -66,17 +113,15 @@ export function TransactionsPage() {
     setError(null);
 
     try {
-      const [accountsData, transactionsData] = await Promise.all([
+      const [accountsData, categoriesData, transactionsData] = await Promise.all([
         accountsApi.list(),
+        transactionsApi.getCategories(),
         transactionsApi.list(filters),
       ]);
 
       setAccounts(accountsData);
+      setCategories(categoriesData);
       setTransactions(transactionsData);
-
-      if (!accountId && accountsData[0]) {
-        setAccountId(String(accountsData[0].id));
-      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "No se pudieron cargar las transacciones");
     } finally {
@@ -87,6 +132,17 @@ export function TransactionsPage() {
   useEffect(() => {
     void loadInitialData();
   }, []);
+
+  useEffect(() => {
+    if (!category) {
+      return;
+    }
+
+    const categoryStillVisible = visibleCategories.some((transactionCategory) => transactionCategory.key === category);
+    if (!categoryStillVisible) {
+      setCategory("");
+    }
+  }, [category, visibleCategories]);
 
   const refreshTransactions = async (nextFilters = filters) => {
     setLoading(true);
@@ -108,6 +164,12 @@ export function TransactionsPage() {
     setError(null);
     setSuccess(null);
 
+    if (!title.trim() || !amount || !type || !accountId || !category) {
+      setError("Completá nombre, monto, tipo, cuenta y categoría para registrar la transacción.");
+      setSubmitting(false);
+      return;
+    }
+
     try {
       await transactionsApi.create({
         title,
@@ -120,7 +182,6 @@ export function TransactionsPage() {
 
       setTitle("");
       setAmount("");
-      setCategory("");
       setDescription("");
       setSuccess("Transacción creada correctamente");
       await refreshTransactions();
@@ -161,8 +222,8 @@ export function TransactionsPage() {
         <section className="page-header">
           <div>
             <span className="eyebrow">Transacciones</span>
-            <h1>Registrá y consultá tus movimientos</h1>
-            <p>Guardá ingresos y gastos, filtralos por cuenta o fecha y revisá tu historial cuando lo necesites.</p>
+            <h1>Registrá movimientos en pocos clics</h1>
+            <p>Elegí tipo, categoría y cuenta desde una grilla rápida, y revisá tu historial sin perder contexto.</p>
           </div>
         </section>
       </Reveal>
@@ -172,75 +233,70 @@ export function TransactionsPage() {
           <div className="panel-heading">
             <div>
               <span className="eyebrow">Nueva transacción</span>
-              <h2>Cargar movimiento</h2>
+              <h2>Carga rápida</h2>
+              <p>Solo hace falta nombre, monto, tipo, cuenta y categoría.</p>
             </div>
           </div>
 
-          <form className="stack-form" onSubmit={handleCreate}>
+          <form className="stack-form transaction-quick-form" onSubmit={handleCreate}>
             <label className="field">
-              <span>Título</span>
+              <span>Nombre</span>
               <input
                 type="text"
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
-                placeholder="Sueldo de marzo"
+                placeholder="Supermercado del sábado"
                 required
               />
             </label>
 
-            <div className="field-grid">
-              <label className="field">
-                <span>Monto</span>
-                <input
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  value={amount}
-                  onChange={(event) => setAmount(event.target.value)}
-                  required
-                />
-              </label>
-
-              <label className="field">
-                <span>Tipo</span>
-                <AnimatedSelect
-                  value={type}
-                  options={transactionTypeOptions}
-                  onChange={(value) => setType(value as TransactionType)}
-                  ariaLabel="Tipo de transacción"
-                />
-              </label>
-            </div>
-
             <label className="field">
-              <span>Cuenta</span>
-              <AnimatedSelect
-                value={accountId}
-                options={accountOptions}
-                onChange={setAccountId}
-                placeholder={accounts.length === 0 ? "Primero creá una cuenta" : "Seleccioná una cuenta"}
-                disabled={accounts.length === 0}
-                ariaLabel="Cuenta"
-              />
-            </label>
-
-            <label className="field">
-              <span>Categoría</span>
+              <span>Monto</span>
               <input
-                type="text"
-                value={category}
-                onChange={(event) => setCategory(event.target.value)}
-                placeholder="supermercado"
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={amount}
+                onChange={(event) => setAmount(event.target.value)}
+                placeholder="0,00"
+                required
               />
             </label>
+
+            <SelectionGrid
+              label="Tipo"
+              value={type}
+              options={transactionTypeOptions}
+              onChange={(nextType) => setType(nextType as TransactionType)}
+              columns="compact"
+            />
+
+            <SelectionGrid
+              label="Categoría"
+              value={category}
+              options={categoryGridOptions}
+              onChange={setCategory}
+              columns="wide"
+              emptyMessage="No hay categorías disponibles para este tipo."
+            />
+
+            <SelectionGrid
+              label="Cuenta"
+              value={accountId}
+              options={accountGridOptions}
+              onChange={setAccountId}
+              columns="regular"
+              emptyMessage="Primero necesitás una cuenta activa para registrar movimientos."
+              disabled={accountGridOptions.length === 0}
+            />
 
             <label className="field">
               <span>Descripción</span>
               <textarea
-                rows={4}
+                rows={3}
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
-                placeholder="Observaciones opcionales"
+                placeholder="Dato opcional para recordar el contexto"
               />
             </label>
 
@@ -250,7 +306,7 @@ export function TransactionsPage() {
             <button
               type="submit"
               className="primary-button"
-              disabled={submitting || accounts.length === 0}
+              disabled={submitting || activeAccounts.length === 0}
             >
               {submitting ? "Guardando..." : "Guardar movimiento"}
             </button>
@@ -271,7 +327,7 @@ export function TransactionsPage() {
                 <span>Cuenta</span>
                 <AnimatedSelect
                   value={filters.account_id ? String(filters.account_id) : ""}
-                  options={filterAccountOptions}
+                  options={accountOptions}
                   onChange={(value) =>
                     setFilters((current) => ({
                       ...current,
@@ -298,18 +354,19 @@ export function TransactionsPage() {
               </label>
             </div>
 
-            <div className="field-grid">
+            <div className="field-grid field-grid--three">
               <label className="field">
                 <span>Categoría</span>
-                <input
-                  type="text"
+                <AnimatedSelect
                   value={filters.category ?? ""}
-                  onChange={(event) =>
+                  options={filterCategoryOptions}
+                  onChange={(value) =>
                     setFilters((current) => ({
                       ...current,
-                      category: event.target.value,
+                      category: value,
                     }))
                   }
+                  ariaLabel="Filtrar por categoría"
                 />
               </label>
 
@@ -381,36 +438,48 @@ export function TransactionsPage() {
             />
           ) : (
             <StaggerGroup className="stack-list" onView={false}>
-              {orderedTransactions.map((transaction) => (
-                <motion.div
-                  key={transaction.id}
-                  className="list-row list-row--transaction"
-                  variants={fadeUp}
-                  whileHover={cardHover}
-                  layout
-                >
-                  <div>
-                    <strong>{transaction.title}</strong>
-                    <p>
-                      {accountMap.get(transaction.account_id) ?? `Cuenta ${transaction.account_id}`} ·{" "}
-                      {formatTypeLabel(transaction.type)} · {transaction.category || "sin categoría"}
-                    </p>
-                    {transaction.description ? <small>{transaction.description}</small> : null}
-                  </div>
+              {orderedTransactions.map((transaction) => {
+                const categoryLabel =
+                  transaction.category_label ??
+                  categoryMap.get(transaction.category) ??
+                  formatCategoryKeyLabel(transaction.category);
 
-                  <div className="list-row__meta">
-                    <strong>{formatCurrency(transaction.amount)}</strong>
-                    <span>{formatDate(transaction.created_at)}</span>
-                    <button
-                      type="button"
-                      className="danger-link"
-                      onClick={() => void handleDelete(transaction.id)}
-                    >
-                      Eliminar
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
+                return (
+                  <motion.div
+                    key={transaction.id}
+                    className={`list-row list-row--transaction list-row--${transaction.type}`}
+                    variants={fadeUp}
+                    whileHover={cardHover}
+                    layout
+                  >
+                    <div>
+                      <div className="list-row__title">
+                        <strong>{transaction.title}</strong>
+                        <span className={`category-badge category-badge--${transaction.type}`}>
+                          {categoryLabel}
+                        </span>
+                      </div>
+                      <p>
+                        {accountMap.get(transaction.account_id) ?? `Cuenta ${transaction.account_id}`} ·{" "}
+                        {formatTypeLabel(transaction.type)}
+                      </p>
+                      {transaction.description ? <small>{transaction.description}</small> : null}
+                    </div>
+
+                    <div className="list-row__meta">
+                      <strong>{formatCurrency(transaction.amount)}</strong>
+                      <span>{formatDate(transaction.created_at)}</span>
+                      <button
+                        type="button"
+                        className="danger-link"
+                        onClick={() => void handleDelete(transaction.id)}
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </StaggerGroup>
           )}
         </motion.article>

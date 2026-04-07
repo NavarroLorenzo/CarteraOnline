@@ -9,20 +9,27 @@ const (
 	Expense TransactionType = "expense"
 )
 
-const InitialBalanceCategory = "initial_balance"
-const TransferCategory = "transfer"
+const InitialBalanceTitle = "Saldo inicial"
+const InitialBalanceDescription = "Carga inicial de saldo"
 
 type Transaction struct {
-	ID          int64           `json:"id"`
-	UserID      int64           `json:"-"`
-	Title       string          `json:"title"`
-	Amount      float64         `json:"amount"`
-	Type        TransactionType `json:"type"`
-	AccountID   int64           `json:"account_id"`
-	Category    string          `json:"category"`
-	Description string          `json:"description"`
-	TransferID  *string         `json:"transfer_id,omitempty"`
-	CreatedAt   time.Time       `json:"created_at"`
+	ID            int64           `json:"id"`
+	UserID        int64           `json:"-"`
+	Title         string          `json:"title"`
+	Amount        float64         `json:"amount"`
+	Type          TransactionType `json:"type"`
+	AccountID     int64           `json:"account_id"`
+	Category      string          `json:"category"`
+	CategoryLabel string          `json:"category_label,omitempty"`
+	Description   string          `json:"description"`
+	TransferID    *string         `json:"transfer_id,omitempty"`
+	CreatedAt     time.Time       `json:"created_at"`
+}
+
+type TransactionCategoryOption struct {
+	Key          string            `json:"key"`
+	Label        string            `json:"label"`
+	AllowedTypes []TransactionType `json:"allowed_types"`
 }
 
 type CreateTransactionInput struct {

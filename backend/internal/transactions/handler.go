@@ -50,6 +50,10 @@ func (h *Handler) Create(c *gin.Context) {
 			httpjson.Error(c, 400, "transaction_title_required", err.Error())
 		case ErrTransactionCategoryRequired:
 			httpjson.Error(c, 400, "transaction_category_required", err.Error())
+		case ErrTransactionCategoryInvalid:
+			httpjson.Error(c, 400, "transaction_category_invalid", err.Error())
+		case ErrTransactionCategoryTypeMismatch:
+			httpjson.Error(c, 400, "transaction_category_type_mismatch", err.Error())
 		case ErrTransactionAmountInvalid:
 			httpjson.Error(c, 400, "transaction_amount_invalid", err.Error())
 		case ErrTransactionTypeInvalid:
@@ -61,6 +65,15 @@ func (h *Handler) Create(c *gin.Context) {
 	}
 
 	c.JSON(201, transaction)
+}
+
+func (h *Handler) ListCategories(c *gin.Context) {
+	_, ok := auth.AbortIfUnauthenticated(c)
+	if !ok {
+		return
+	}
+
+	c.JSON(200, h.service.ListCategories())
 }
 
 func (h *Handler) GetAll(c *gin.Context) {
@@ -139,7 +152,12 @@ func buildTransactionFilters(c *gin.Context) (TransactionFilters, error) {
 	}
 
 	if categoryStr := c.Query("category"); categoryStr != "" {
-		filters.Category = &categoryStr
+		categoryKey, err := normalizeTransactionCategoryFilter(categoryStr)
+		if err != nil {
+			return filters, err
+		}
+
+		filters.Category = &categoryKey
 	}
 
 	if dateFromStr := c.Query("date_from"); dateFromStr != "" {
@@ -179,6 +197,8 @@ func (h *Handler) handleFilterError(c *gin.Context, err error) {
 		httpjson.Error(c, 400, "invalid_date_to", ErrInvalidDateTo.Error())
 	case ErrInvalidDateRange:
 		httpjson.Error(c, 400, "invalid_date_range", ErrInvalidDateRange.Error())
+	case ErrTransactionCategoryInvalid:
+		httpjson.Error(c, 400, "invalid_category", ErrTransactionCategoryInvalid.Error())
 	default:
 		httpjson.Error(c, 400, "invalid_filters", "Filtros inválidos")
 	}
@@ -314,6 +334,10 @@ func (h *Handler) Update(c *gin.Context) {
 			httpjson.Error(c, 400, "transaction_title_required", err.Error())
 		case ErrTransactionCategoryRequired:
 			httpjson.Error(c, 400, "transaction_category_required", err.Error())
+		case ErrTransactionCategoryInvalid:
+			httpjson.Error(c, 400, "transaction_category_invalid", err.Error())
+		case ErrTransactionCategoryTypeMismatch:
+			httpjson.Error(c, 400, "transaction_category_type_mismatch", err.Error())
 		case ErrTransactionAmountInvalid:
 			httpjson.Error(c, 400, "transaction_amount_invalid", err.Error())
 		case ErrTransactionTypeInvalid:

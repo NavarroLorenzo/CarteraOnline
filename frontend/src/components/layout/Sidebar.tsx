@@ -4,8 +4,8 @@ import { fadeLeft, fadeUp, staggerContainer } from "../ui/animation";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard" },
-  { to: "/accounts", label: "Cuentas" },
   { to: "/transactions", label: "Transacciones" },
+  { to: "/accounts", label: "Cuentas" },
   { to: "/transfers", label: "Transferencias" },
 ];
 

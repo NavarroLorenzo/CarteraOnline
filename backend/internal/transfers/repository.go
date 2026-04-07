@@ -1,6 +1,7 @@
 package transfers
 
 import (
+	"cartera-app/backend/internal/transactions"
 	"context"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -123,7 +124,7 @@ func (r *PostgresRepository) ExecuteTransfer(userID int64, input CreateTransferO
 		input.Amount,
 		"expense",
 		input.FromAccountID,
-		"transfer",
+		transactions.CategoryTransfer,
 		input.ExpenseDescription,
 		input.TransferID,
 	); err != nil {
@@ -138,7 +139,7 @@ func (r *PostgresRepository) ExecuteTransfer(userID int64, input CreateTransferO
 		input.Amount,
 		"income",
 		input.ToAccountID,
-		"transfer",
+		transactions.CategoryTransfer,
 		input.IncomeDescription,
 		input.TransferID,
 	); err != nil {

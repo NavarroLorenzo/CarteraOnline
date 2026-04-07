@@ -3,21 +3,12 @@ package transactions
 import (
 	"errors"
 	"sort"
-	"strings"
 	"time"
 )
 
 var (
 	ErrDashboardCategoryRequired = errors.New("category_key es obligatorio")
 	ErrInvalidDashboardCategory  = errors.New("category_key inválido")
-)
-
-const (
-	DashboardCategoryFood      = "comida"
-	DashboardCategoryTransport = "transporte"
-	DashboardCategoryLeisure   = "ocio"
-	DashboardCategoryServices  = "servicios"
-	DashboardCategoryOther     = "otros"
 )
 
 type DashboardSummary struct {
@@ -82,43 +73,10 @@ type DashboardCategoryDetail struct {
 	Transactions  []DashboardTransactionItem `json:"transactions"`
 }
 
-type dashboardCategoryDefinition struct {
-	Key      string
-	Label    string
-	Keywords []string
-}
-
-var dashboardCategories = []dashboardCategoryDefinition{
-	{
-		Key:      DashboardCategoryFood,
-		Label:    "Comida",
-		Keywords: []string{"comida", "super", "supermercado", "grocery", "restaurante", "restaurant", "almacen", "delivery", "cafe"},
-	},
-	{
-		Key:      DashboardCategoryTransport,
-		Label:    "Transporte",
-		Keywords: []string{"transporte", "nafta", "combustible", "uber", "cabify", "taxi", "sube", "colectivo", "tren", "peaje", "estacionamiento"},
-	},
-	{
-		Key:      DashboardCategoryLeisure,
-		Label:    "Ocio",
-		Keywords: []string{"ocio", "entretenimiento", "cine", "netflix", "spotify", "juego", "gaming", "salida", "streaming"},
-	},
-	{
-		Key:      DashboardCategoryServices,
-		Label:    "Servicios",
-		Keywords: []string{"servicio", "servicios", "internet", "telefono", "teléfono", "luz", "agua", "gas", "alquiler", "expensa", "seguro"},
-	},
-	{
-		Key:   DashboardCategoryOther,
-		Label: "Otros",
-	},
-}
-
 func (s *service) GetDashboard(userID int64, filters TransactionFilters) (DashboardAnalytics, error) {
 	rangeStart, rangeEnd := resolveDashboardRange(filters)
 
-	periodTransactions, err := s.repo.GetAll(userID, buildDashboardFilters(filters, rangeStart, rangeEnd))
+	periodTransactions, err := s.getTransactions(userID, buildDashboardFilters(filters, rangeStart, rangeEnd))
 	if err != nil {
 		return DashboardAnalytics{}, err
 	}
@@ -133,13 +91,13 @@ func (s *service) GetDashboard(userID int64, filters TransactionFilters) (Dashbo
 	dayEnd := endOfDay(rangeEnd)
 
 	monthStart := startOfMonth(rangeEnd)
-	currentMonthTransactions, err := s.repo.GetAll(userID, buildDashboardFilters(filters, monthStart, rangeEnd))
+	currentMonthTransactions, err := s.getTransactions(userID, buildDashboardFilters(filters, monthStart, rangeEnd))
 	if err != nil {
 		return DashboardAnalytics{}, err
 	}
 
 	previousMonthStart, previousMonthEnd := comparablePreviousMonthRange(rangeEnd)
-	previousMonthTransactions, err := s.repo.GetAll(userID, buildDashboardFilters(filters, previousMonthStart, previousMonthEnd))
+	previousMonthTransactions, err := s.getTransactions(userID, buildDashboardFilters(filters, previousMonthStart, previousMonthEnd))
 	if err != nil {
 		return DashboardAnalytics{}, err
 	}
@@ -168,7 +126,7 @@ func (s *service) GetDashboardCategoryDetail(userID int64, filters TransactionFi
 	}
 
 	rangeStart, rangeEnd := resolveDashboardRange(filters)
-	periodTransactions, err := s.repo.GetAll(userID, buildDashboardFilters(filters, rangeStart, rangeEnd))
+	periodTransactions, err := s.getTransactions(userID, buildDashboardFilters(filters, rangeStart, rangeEnd))
 	if err != nil {
 		return DashboardCategoryDetail{}, err
 	}
@@ -189,8 +147,7 @@ func (s *service) GetDashboardCategoryDetail(userID int64, filters TransactionFi
 
 		totalExpenses += transaction.Amount
 
-		currentKey, _ := normalizeDashboardCategory(transaction.Category)
-		if currentKey == normalizedKey {
+		if transaction.Category == normalizedKey {
 			matchingTransactions = append(matchingTransactions, transaction)
 		}
 	}
@@ -245,6 +202,8 @@ func (s *service) loadAccountNames(userID int64) (map[int64]string, error) {
 func buildDashboardFilters(base TransactionFilters, dateFrom, dateTo time.Time) TransactionFilters {
 	return TransactionFilters{
 		AccountID: base.AccountID,
+		Type:      base.Type,
+		Category:  base.Category,
 		DateFrom:  &dateFrom,
 		DateTo:    &dateTo,
 	}
@@ -283,8 +242,7 @@ func filterDashboardAnalyticsTransactions(transactions []Transaction) []Transact
 }
 
 func isDashboardInternalTransaction(transaction Transaction) bool {
-	category := strings.TrimSpace(strings.ToLower(transaction.Category))
-	return transaction.TransferID != nil || category == TransferCategory || category == InitialBalanceCategory
+	return transaction.TransferID != nil || transaction.Category == CategoryTransfer || isInitialBalanceTransaction(transaction)
 }
 
 func filterTransactionsInRange(transactions []Transaction, dateFrom, dateTo time.Time) []Transaction {
@@ -344,9 +302,11 @@ func selectTrendInterval(dateFrom, dateTo time.Time) string {
 	days := int(endOfDay(dateTo).Sub(startOfDay(dateFrom)).Hours()/24) + 1
 
 	switch {
+	case days <= 1:
+		return "hourly"
 	case days <= 14:
 		return "daily"
-	case days <= 93:
+	case days <= 31:
 		return "weekly"
 	default:
 		return "monthly"
@@ -354,6 +314,10 @@ func selectTrendInterval(dateFrom, dateTo time.Time) string {
 }
 
 func buildTrendPoints(transactions []Transaction, dateFrom, dateTo time.Time, interval string) []DashboardTrendPoint {
+	if interval == "hourly" {
+		return buildHourlyTrendPoints(transactions, dateFrom, dateTo)
+	}
+
 	points := buildTrendBuckets(dateFrom, dateTo, interval)
 
 	for _, transaction := range transactions {
@@ -375,6 +339,16 @@ func buildTrendPoints(transactions []Transaction, dateFrom, dateTo time.Time, in
 }
 
 func buildExpenseOnlyTrendPoints(transactions []Transaction, dateFrom, dateTo time.Time, interval string) []DashboardTrendPoint {
+	if interval == "hourly" {
+		hourlyPoints := buildHourlyTrendPoints(transactions, dateFrom, dateTo)
+
+		for index := range hourlyPoints {
+			hourlyPoints[index].IncomeTotal = 0
+		}
+
+		return hourlyPoints
+	}
+
 	points := buildTrendBuckets(dateFrom, dateTo, interval)
 
 	for _, transaction := range transactions {
@@ -434,11 +408,13 @@ func buildCategoryBreakdown(transactions []Transaction) []DashboardCategorySumma
 			continue
 		}
 
-		key, label := normalizeDashboardCategory(transaction.Category)
-		entry, ok := totals[key]
+		entry, ok := totals[transaction.Category]
 		if !ok {
-			entry = &DashboardCategorySummary{Key: key, Label: label}
-			totals[key] = entry
+			entry = &DashboardCategorySummary{
+				Key:   transaction.Category,
+				Label: resolveTransactionCategoryLabel(transaction.Category),
+			}
+			totals[transaction.Category] = entry
 		}
 
 		entry.Amount += transaction.Amount
@@ -497,8 +473,8 @@ func buildRecentTransactions(transactions []Transaction, accountNames map[int64]
 		return ordered[left].CreatedAt.After(ordered[right].CreatedAt)
 	})
 
-	if len(ordered) > 6 {
-		ordered = ordered[:6]
+	if len(ordered) > 5 {
+		ordered = ordered[:5]
 	}
 
 	return buildTransactionItems(ordered, accountNames)
@@ -527,52 +503,103 @@ func buildTransactionItems(transactions []Transaction, accountNames map[int64]st
 	return items
 }
 
-func displayDashboardCategory(transaction Transaction) (string, string) {
-	if transaction.TransferID != nil || strings.EqualFold(strings.TrimSpace(transaction.Category), TransferCategory) {
-		return TransferCategory, "Transferencia"
+func buildHourlyTrendPoints(transactions []Transaction, dateFrom, dateTo time.Time) []DashboardTrendPoint {
+	type pointTotals struct {
+		income  float64
+		expense float64
 	}
 
-	if strings.EqualFold(strings.TrimSpace(transaction.Category), InitialBalanceCategory) {
-		return InitialBalanceCategory, "Saldo inicial"
+	groupedTotals := make(map[time.Time]pointTotals)
+
+	for _, transaction := range transactions {
+		bucketStart := transaction.CreatedAt.Truncate(time.Hour)
+		if bucketStart.Before(startOfDay(dateFrom)) || bucketStart.After(endOfDay(dateTo)) {
+			continue
+		}
+
+		totals := groupedTotals[bucketStart]
+		if transaction.Type == Income {
+			totals.income += transaction.Amount
+		} else if transaction.Type == Expense {
+			totals.expense += transaction.Amount
+		}
+
+		groupedTotals[bucketStart] = totals
 	}
 
-	return normalizeDashboardCategory(transaction.Category)
+	if len(groupedTotals) <= 1 {
+		return buildSingleDayTrendPoint(transactions, dateFrom)
+	}
+
+	keys := make([]time.Time, 0, len(groupedTotals))
+	for bucketStart := range groupedTotals {
+		keys = append(keys, bucketStart)
+	}
+
+	sort.Slice(keys, func(left, right int) bool {
+		return keys[left].Before(keys[right])
+	})
+
+	points := make([]DashboardTrendPoint, 0, len(keys))
+	for _, bucketStart := range keys {
+		totals := groupedTotals[bucketStart]
+		points = append(points, DashboardTrendPoint{
+			Label:        bucketStart.Format("15h"),
+			StartDate:    bucketStart,
+			EndDate:      bucketStart.Add(time.Hour - time.Second),
+			IncomeTotal:  totals.income,
+			ExpenseTotal: totals.expense,
+		})
+	}
+
+	return points
 }
 
-func normalizeDashboardCategory(value string) (string, string) {
-	normalized := strings.ToLower(strings.TrimSpace(value))
-	if normalized == "" {
-		return DashboardCategoryOther, "Otros"
+func buildSingleDayTrendPoint(transactions []Transaction, dateFrom time.Time) []DashboardTrendPoint {
+	if len(transactions) == 0 {
+		return nil
 	}
 
-	for _, category := range dashboardCategories {
-		if normalized == category.Key {
-			return category.Key, category.Label
-		}
+	point := DashboardTrendPoint{
+		Label:     "Hoy",
+		StartDate: startOfDay(dateFrom),
+		EndDate:   endOfDay(dateFrom),
+	}
 
-		for _, keyword := range category.Keywords {
-			if strings.Contains(normalized, keyword) {
-				return category.Key, category.Label
-			}
+	for _, transaction := range transactions {
+		if transaction.Type == Income {
+			point.IncomeTotal += transaction.Amount
+		} else if transaction.Type == Expense {
+			point.ExpenseTotal += transaction.Amount
 		}
 	}
 
-	return DashboardCategoryOther, "Otros"
+	return []DashboardTrendPoint{point}
+}
+
+func displayDashboardCategory(transaction Transaction) (string, string) {
+	if transaction.TransferID != nil || transaction.Category == CategoryTransfer {
+		return CategoryTransfer, resolveTransactionCategoryLabel(CategoryTransfer)
+	}
+
+	if isInitialBalanceTransaction(transaction) {
+		return CategoryOther, "Saldo inicial"
+	}
+
+	return transaction.Category, resolveTransactionCategoryLabel(transaction.Category)
 }
 
 func resolveDashboardCategory(value string) (string, string, error) {
-	normalized := strings.ToLower(strings.TrimSpace(value))
-	if normalized == "" {
+	if normalizeCategoryToken(value) == "" {
 		return "", "", ErrDashboardCategoryRequired
 	}
 
-	for _, category := range dashboardCategories {
-		if normalized == category.Key {
-			return category.Key, category.Label, nil
-		}
+	key, found := resolveTransactionCategoryKey(value)
+	if !found {
+		return "", "", ErrInvalidDashboardCategory
 	}
 
-	return "", "", ErrInvalidDashboardCategory
+	return key, resolveTransactionCategoryLabel(key), nil
 }
 
 func comparablePreviousMonthRange(anchor time.Time) (time.Time, time.Time) {
@@ -626,6 +653,8 @@ func minTime(left, right time.Time) time.Time {
 
 func formatTrendLabel(start, end time.Time, interval string) string {
 	switch interval {
+	case "hourly":
+		return start.Format("15h")
 	case "weekly":
 		return formatShortDate(start) + " - " + formatShortDate(end)
 	case "monthly":

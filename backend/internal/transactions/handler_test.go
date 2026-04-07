@@ -34,3 +34,17 @@ func TestBuildTransactionFiltersRejectsInvalidAccountID(t *testing.T) {
 		t.Fatalf("expected ErrInvalidAccountID, got %v", err)
 	}
 }
+
+func TestBuildTransactionFiltersRejectsInvalidCategory(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	recorder := httptest.NewRecorder()
+	context, _ := gin.CreateTestContext(recorder)
+	request := httptest.NewRequest("GET", "/transactions?category=mascotas", nil)
+	context.Request = request
+
+	_, err := buildTransactionFilters(context)
+	if err != ErrTransactionCategoryInvalid {
+		t.Fatalf("expected ErrTransactionCategoryInvalid, got %v", err)
+	}
+}

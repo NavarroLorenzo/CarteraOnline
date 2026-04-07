@@ -21,7 +21,18 @@ type fakeTransactionsRepo struct {
 
 func (f *fakeTransactionsRepo) Create(userID int64, input CreateTransactionInput) (Transaction, error) {
 	f.createCalled = true
-	return Transaction{}, nil
+	return Transaction{
+		ID:          1,
+		UserID:      userID,
+		Title:       input.Title,
+		Amount:      input.Amount,
+		Type:        input.Type,
+		AccountID:   input.AccountID,
+		Category:    input.Category,
+		Description: input.Description,
+		TransferID:  input.TransferID,
+		CreatedAt:   time.Date(2026, 4, 7, 12, 0, 0, 0, time.UTC),
+	}, nil
 }
 
 func (f *fakeTransactionsRepo) GetAll(userID int64, filters TransactionFilters) ([]Transaction, error) {
@@ -140,7 +151,7 @@ func TestCreateRejectsInactiveAccount(t *testing.T) {
 		Amount:    100,
 		Type:      Expense,
 		AccountID: 5,
-		Category:  "hogar",
+		Category:  CategoryOther,
 	})
 	if err != ErrAccountInactive {
 		t.Fatalf("expected ErrAccountInactive, got %v", err)
@@ -229,19 +240,20 @@ func TestGetDashboardBuildsAnalyticsExcludingTransfersAndInitialBalance(t *testi
 				Amount:     700,
 				Type:       Expense,
 				AccountID:  10,
-				Category:   TransferCategory,
+				Category:   CategoryTransfer,
 				TransferID: pointerToString("tr_1"),
 				CreatedAt:  time.Date(2026, 4, 6, 9, 0, 0, 0, time.UTC),
 			},
 			{
-				ID:        5,
-				UserID:    1,
-				Title:     "Saldo inicial",
-				Amount:    900,
-				Type:      Income,
-				AccountID: 10,
-				Category:  InitialBalanceCategory,
-				CreatedAt: time.Date(2026, 4, 1, 8, 0, 0, 0, time.UTC),
+				ID:          5,
+				UserID:      1,
+				Title:       InitialBalanceTitle,
+				Amount:      900,
+				Type:        Income,
+				AccountID:   10,
+				Category:    CategoryOther,
+				Description: InitialBalanceDescription,
+				CreatedAt:   time.Date(2026, 4, 1, 8, 0, 0, 0, time.UTC),
 			},
 			{
 				ID:        6,
@@ -296,14 +308,17 @@ func TestGetDashboardBuildsAnalyticsExcludingTransfersAndInitialBalance(t *testi
 	if len(dashboard.ExpenseCategories) != 2 {
 		t.Fatalf("expected 2 categories, got %d", len(dashboard.ExpenseCategories))
 	}
-	if dashboard.ExpenseCategories[0].Key != DashboardCategoryFood {
-		t.Fatalf("expected first category comida, got %s", dashboard.ExpenseCategories[0].Key)
+	if dashboard.ExpenseCategories[0].Key != CategoryGroceries {
+		t.Fatalf("expected first category supermercado, got %s", dashboard.ExpenseCategories[0].Key)
 	}
 	if len(dashboard.TopExpenses) == 0 || dashboard.TopExpenses[0].Title != "Supermercado" {
 		t.Fatalf("expected top expense Supermercado, got %+v", dashboard.TopExpenses)
 	}
 	if len(dashboard.RecentTransactions) == 0 || dashboard.RecentTransactions[0].AccountName != "Cuenta sueldo" {
 		t.Fatalf("expected recent transactions to include account name, got %+v", dashboard.RecentTransactions)
+	}
+	if len(dashboard.RecentTransactions) != 5 {
+		t.Fatalf("expected 5 recent transactions, got %d", len(dashboard.RecentTransactions))
 	}
 	if dashboard.MonthSummary.IncomeTotal != 3000 {
 		t.Fatalf("expected month income total 3000, got %v", dashboard.MonthSummary.IncomeTotal)
@@ -319,21 +334,21 @@ func TestGetDashboardCategoryDetailGroupsNormalizedExpenses(t *testing.T) {
 			{
 				ID:        1,
 				UserID:    1,
-				Title:     "Supermercado",
+				Title:     "Restaurante",
 				Amount:    500,
 				Type:      Expense,
 				AccountID: 10,
-				Category:  "supermercado",
+				Category:  "restaurante",
 				CreatedAt: time.Date(2026, 4, 7, 15, 0, 0, 0, time.UTC),
 			},
 			{
 				ID:        2,
 				UserID:    1,
-				Title:     "Restaurante",
+				Title:     "Comida rápida",
 				Amount:    200,
 				Type:      Expense,
 				AccountID: 10,
-				Category:  "restaurante",
+				Category:  "comida",
 				CreatedAt: time.Date(2026, 4, 6, 15, 0, 0, 0, time.UTC),
 			},
 			{
@@ -362,7 +377,7 @@ func TestGetDashboardCategoryDetailGroupsNormalizedExpenses(t *testing.T) {
 	detail, err := service.GetDashboardCategoryDetail(1, TransactionFilters{
 		DateFrom: &dateFrom,
 		DateTo:   &dateTo,
-	}, DashboardCategoryFood)
+	}, CategoryFood)
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)
 	}
@@ -378,6 +393,89 @@ func TestGetDashboardCategoryDetailGroupsNormalizedExpenses(t *testing.T) {
 	}
 	if detail.Transactions[0].CategoryLabel != "Comida" {
 		t.Fatalf("expected normalized category label Comida, got %s", detail.Transactions[0].CategoryLabel)
+	}
+}
+
+func TestCreateRejectsInvalidCategory(t *testing.T) {
+	repo := &fakeTransactionsRepo{}
+	accountSvc := &fakeAccountsService{
+		account: accounts.Account{ID: 5, Name: "Caja", IsActive: true},
+		found:   true,
+	}
+
+	service := NewService(repo, accountSvc, accountSvc)
+
+	_, err := service.Create(1, CreateTransactionInput{
+		Title:     "Compra",
+		Amount:    100,
+		Type:      Expense,
+		AccountID: 5,
+		Category:  "mascotas",
+	})
+	if err != ErrTransactionCategoryInvalid {
+		t.Fatalf("expected ErrTransactionCategoryInvalid, got %v", err)
+	}
+	if repo.createCalled {
+		t.Fatal("expected repo.Create not to be called")
+	}
+}
+
+func TestGetAllNormalizesLegacyCategoriesForFilters(t *testing.T) {
+	repo := &fakeTransactionsRepo{
+		transactions: []Transaction{
+			{
+				ID:        1,
+				UserID:    1,
+				Title:     "Sueldo",
+				Amount:    1000,
+				Type:      Income,
+				AccountID: 10,
+				Category:  "salario",
+				CreatedAt: time.Date(2026, 4, 7, 10, 0, 0, 0, time.UTC),
+			},
+			{
+				ID:        2,
+				UserID:    1,
+				Title:     "Taxi",
+				Amount:    100,
+				Type:      Expense,
+				AccountID: 10,
+				Category:  "taxi",
+				CreatedAt: time.Date(2026, 4, 7, 11, 0, 0, 0, time.UTC),
+			},
+		},
+	}
+	accountSvc := &fakeAccountsService{}
+	service := NewService(repo, accountSvc, accountSvc)
+
+	categoryKey := CategorySalary
+	transactions, err := service.GetAll(1, TransactionFilters{Category: &categoryKey})
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+
+	if len(transactions) != 1 {
+		t.Fatalf("expected 1 transaction, got %d", len(transactions))
+	}
+	if transactions[0].Category != CategorySalary {
+		t.Fatalf("expected normalized category sueldo, got %s", transactions[0].Category)
+	}
+	if transactions[0].CategoryLabel != "Sueldo" {
+		t.Fatalf("expected normalized category label Sueldo, got %s", transactions[0].CategoryLabel)
+	}
+}
+
+func TestListCategoriesKeepsOtrosAsLastFallback(t *testing.T) {
+	service := NewService(&fakeTransactionsRepo{}, &fakeAccountsService{}, &fakeAccountsService{})
+
+	categories := service.ListCategories()
+	if len(categories) == 0 {
+		t.Fatal("expected categories to be returned")
+	}
+
+	lastCategory := categories[len(categories)-1]
+	if lastCategory.Key != CategoryOther {
+		t.Fatalf("expected last category to be otros, got %s", lastCategory.Key)
 	}
 }
 

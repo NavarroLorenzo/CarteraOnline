@@ -1,15 +1,25 @@
 import { AnimatePresence, motion } from "framer-motion";
-import type { DashboardCategoryDetail } from "../../types/api";
+import type { DashboardCategoryDetail, DashboardCategorySummary } from "../../types/api";
 import { formatCurrency, formatDate, formatTypeLabel } from "../../lib/format";
-import { TrendLineChart } from "./TrendLineChart";
+import { CategoryPieChart } from "./CategoryPieChart";
 
 type CategoryDetailModalProps = {
   detail: DashboardCategoryDetail | null;
+  categories: DashboardCategorySummary[];
+  activeCategoryKey?: string | null;
   loading: boolean;
   onClose: () => void;
+  onCategorySelect?: (categoryKey: string) => void;
 };
 
-export function CategoryDetailModal({ detail, loading, onClose }: CategoryDetailModalProps) {
+export function CategoryDetailModal({
+  detail,
+  categories,
+  activeCategoryKey,
+  loading,
+  onClose,
+  onCategorySelect,
+}: CategoryDetailModalProps) {
   return (
     <AnimatePresence>
       {detail || loading ? (
@@ -49,7 +59,27 @@ export function CategoryDetailModal({ detail, loading, onClose }: CategoryDetail
             ) : (
               <div className="dashboard-modal__content">
                 <div className="dashboard-modal__chart">
-                  <TrendLineChart points={detail.trend} showIncome={false} />
+                  <CategoryPieChart
+                    categories={categories}
+                    activeCategoryKey={activeCategoryKey ?? detail.category.key}
+                    onCategorySelect={onCategorySelect}
+                    showList={false}
+                  />
+                </div>
+
+                <div className="dashboard-modal__summary">
+                  <div className="dashboard-modal__summary-card">
+                    <span>Participación</span>
+                    <strong>{detail.category.percentage.toFixed(1)}%</strong>
+                  </div>
+                  <div className="dashboard-modal__summary-card">
+                    <span>Total gastado</span>
+                    <strong>{formatCurrency(detail.category.amount)}</strong>
+                  </div>
+                  <div className="dashboard-modal__summary-card">
+                    <span>Movimientos</span>
+                    <strong>{detail.category.transactions_count}</strong>
+                  </div>
                 </div>
 
                 <div className="stack-list">

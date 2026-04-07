@@ -27,9 +27,16 @@ export type Transaction = {
   type: TransactionType;
   account_id: number;
   category: string;
+  category_label?: string;
   description: string;
   transfer_id?: string;
   created_at: string;
+};
+
+export type TransactionCategory = {
+  key: string;
+  label: string;
+  allowed_types: TransactionType[];
 };
 
 export type TransactionSummary = {
@@ -87,7 +94,7 @@ export type DashboardAnalytics = {
   day_summary: DashboardSummary;
   month_summary: DashboardSummary;
   comparison: DashboardComparison;
-  trend_interval: "daily" | "weekly" | "monthly";
+  trend_interval: "hourly" | "daily" | "weekly" | "monthly";
   trend: DashboardTrendPoint[];
   expense_categories: DashboardCategorySummary[];
   top_expenses: DashboardTransactionItem[];
@@ -96,7 +103,7 @@ export type DashboardAnalytics = {
 
 export type DashboardCategoryDetail = {
   category: DashboardCategorySummary;
-  trend_interval: "daily" | "weekly" | "monthly";
+  trend_interval: "hourly" | "daily" | "weekly" | "monthly";
   trend: DashboardTrendPoint[];
   transactions: DashboardTransactionItem[];
 };

@@ -1,12 +1,13 @@
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { transactionsApi } from "../api/transactions";
+import { CategoryPieChart } from "../components/dashboard/CategoryPieChart";
 import { CategoryDetailModal } from "../components/dashboard/CategoryDetailModal";
-import { CategoryDistributionChart } from "../components/dashboard/CategoryDistributionChart";
 import { DashboardFilterBar } from "../components/dashboard/DashboardFilterBar";
+import { IncomeExpenseBarChart } from "../components/dashboard/IncomeExpenseBarChart";
 import { SummaryStatCard } from "../components/dashboard/SummaryStatCard";
-import { TrendLineChart } from "../components/dashboard/TrendLineChart";
 import { EmptyState } from "../components/ui/EmptyState";
 import { MetricCard } from "../components/ui/MetricCard";
 import {
@@ -228,8 +229,8 @@ export function DashboardPage() {
           tone="negative"
         />
         <MetricCard
-          label="Movimientos recientes"
-          value={loading ? "Cargando..." : String(recentTransactions.length)}
+          label="Movimientos del período"
+          value={periodSummary ? String(periodSummary.transactions_count) : "Cargando..."}
         />
       </StaggerGroup>
 
@@ -245,7 +246,7 @@ export function DashboardPage() {
             </div>
 
             {dashboard && dashboard.trend.length > 0 ? (
-              <TrendLineChart points={dashboard.trend} />
+              <IncomeExpenseBarChart points={dashboard.trend} />
             ) : (
               <EmptyState
                 title="Sin tendencia disponible"
@@ -297,7 +298,7 @@ export function DashboardPage() {
             </div>
 
             <StaggerGroup onView={false}>
-              <CategoryDistributionChart
+              <CategoryPieChart
                 categories={categories}
                 activeCategoryKey={selectedCategoryKey}
                 onCategorySelect={(categoryKey) => void handleCategorySelect(categoryKey)}
@@ -337,6 +338,9 @@ export function DashboardPage() {
               <h2>Últimos movimientos</h2>
               <p>Vista rápida de lo más reciente dentro del filtro actual.</p>
             </div>
+            <Link to="/transactions" className="ghost-button">
+              Ver todas las transacciones
+            </Link>
           </div>
 
           {recentTransactions.length === 0 && !loading ? (
@@ -380,7 +384,10 @@ export function DashboardPage() {
 
       <CategoryDetailModal
         detail={categoryDetail}
+        categories={categories}
+        activeCategoryKey={selectedCategoryKey}
         loading={detailLoading}
+        onCategorySelect={(categoryKey) => void handleCategorySelect(categoryKey)}
         onClose={() => {
           setSelectedCategoryKey(null);
           setCategoryDetail(null);

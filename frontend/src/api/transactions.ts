@@ -5,6 +5,7 @@ import type {
   DashboardAnalytics,
   DashboardCategoryDetail,
   Transaction,
+  TransactionCategory,
   TransactionSummary,
   TransactionType,
 } from "../types/api";
@@ -15,7 +16,7 @@ export type CreateTransactionPayload = {
   type: TransactionType;
   account_id: number;
   category: string;
-  description: string;
+  description?: string;
 };
 
 export type TransactionFilters = {
@@ -31,6 +32,10 @@ export const transactionsApi = {
     return apiRequest<Transaction[]>("/transactions", {
       query: filters,
     });
+  },
+
+  getCategories() {
+    return apiRequest<TransactionCategory[]>("/transactions/categories");
   },
 
   create(payload: CreateTransactionPayload) {

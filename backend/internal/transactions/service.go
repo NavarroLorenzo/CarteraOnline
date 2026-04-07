@@ -13,6 +13,8 @@ var ErrTransactionNotFound = errors.New("la transacción no existe")
 var ErrCannotUpdateTransfer = errors.New("las transacciones de transferencia no se editan individualmente")
 var ErrTransactionTitleRequired = errors.New("el título de la transacción es obligatorio")
 var ErrTransactionCategoryRequired = errors.New("la categoría de la transacción es obligatoria")
+var ErrTransactionCategoryInvalid = errors.New("la categoría de la transacción no es válida")
+var ErrTransactionCategoryTypeMismatch = errors.New("la categoría no corresponde al tipo seleccionado")
 var ErrTransactionAmountInvalid = errors.New("el monto debe ser mayor a cero")
 var ErrTransactionTypeInvalid = errors.New("el tipo de transacción no es válido")
 
@@ -28,6 +30,7 @@ type AccountBalance struct {
 }
 
 type Service interface {
+	ListCategories() []TransactionCategoryOption
 	Create(userID int64, input CreateTransactionInput) (Transaction, error)
 	CreateInitialBalance(userID, accountID int64, amount float64) error
 	GetAll(userID int64, filters TransactionFilters) ([]Transaction, error)
@@ -55,6 +58,10 @@ func NewService(repo Repository, accountFinder AccountFinder, accountSvc account
 	}
 }
 
+func (s *service) ListCategories() []TransactionCategoryOption {
+	return listTransactionCategories()
+}
+
 func (s *service) Create(userID int64, input CreateTransactionInput) (Transaction, error) {
 	prepared, err := normalizeCreateInput(input)
 	if err != nil {
@@ -74,11 +81,16 @@ func (s *service) Create(userID int64, input CreateTransactionInput) (Transactio
 	}
 
 	prepared.UserID = userID
-	return s.repo.Create(userID, prepared)
+	transaction, err := s.repo.Create(userID, prepared)
+	if err != nil {
+		return Transaction{}, err
+	}
+
+	return normalizeTransactionForResponse(transaction), nil
 }
 
 func (s *service) GetAll(userID int64, filters TransactionFilters) ([]Transaction, error) {
-	return s.repo.GetAll(userID, filters)
+	return s.getTransactions(userID, filters)
 }
 
 func (s *service) GetBalance(userID int64) (float64, error) {
@@ -115,7 +127,18 @@ func (s *service) GetBalanceByAccountDetailed(userID int64) ([]AccountBalance, f
 }
 
 func (s *service) GetSummary(userID int64, filters TransactionFilters) (TransactionSummary, error) {
-	return s.repo.GetSummary(userID, filters)
+	transactions, err := s.getTransactions(userID, filters)
+	if err != nil {
+		return TransactionSummary{}, err
+	}
+
+	summary := summarizeTransactions(transactions)
+	return TransactionSummary{
+		IncomeTotal:       summary.IncomeTotal,
+		ExpenseTotal:      summary.ExpenseTotal,
+		NetBalance:        summary.NetBalance,
+		TransactionsCount: summary.TransactionsCount,
+	}, nil
 }
 
 func (s *service) CreateInitialBalance(userID, accountID int64, amount float64) error {
@@ -126,12 +149,12 @@ func (s *service) CreateInitialBalance(userID, accountID int64, amount float64) 
 
 	_, err = s.repo.Create(userID, CreateTransactionInput{
 		UserID:      userID,
-		Title:       "Saldo inicial",
+		Title:       InitialBalanceTitle,
 		Amount:      normalizedAmount,
 		Type:        Income,
 		AccountID:   accountID,
-		Category:    InitialBalanceCategory,
-		Description: "Carga inicial de saldo",
+		Category:    CategoryOther,
+		Description: InitialBalanceDescription,
 	})
 	return err
 }
@@ -144,7 +167,7 @@ func (s *service) GetByID(userID, id int64) (Transaction, error) {
 	if !found {
 		return Transaction{}, ErrTransactionNotFound
 	}
-	return transaction, nil
+	return normalizeTransactionForResponse(transaction), nil
 }
 
 func (s *service) Update(userID, id int64, input UpdateTransactionInput) (Transaction, error) {
@@ -176,7 +199,12 @@ func (s *service) Update(userID, id int64, input UpdateTransactionInput) (Transa
 		return Transaction{}, ErrAccountInactive
 	}
 
-	return s.repo.Update(userID, id, prepared)
+	transaction, err := s.repo.Update(userID, id, prepared)
+	if err != nil {
+		return Transaction{}, err
+	}
+
+	return normalizeTransactionForResponse(transaction), nil
 }
 
 func (s *service) Delete(userID, id int64) error {
@@ -201,13 +229,13 @@ func normalizeCreateInput(input CreateTransactionInput) (CreateTransactionInput,
 		return CreateTransactionInput{}, ErrTransactionTitleRequired
 	}
 
-	category := normalize.Optional(input.Category)
-	if category == "" {
-		return CreateTransactionInput{}, ErrTransactionCategoryRequired
-	}
-
 	if input.Type != Income && input.Type != Expense {
 		return CreateTransactionInput{}, ErrTransactionTypeInvalid
+	}
+
+	category, err := normalizeTransactionCategoryInput(input.Category, input.Type)
+	if err != nil {
+		return CreateTransactionInput{}, err
 	}
 
 	amount, err := normalize.Money(input.Amount)
@@ -233,13 +261,13 @@ func normalizeUpdateInput(input UpdateTransactionInput) (UpdateTransactionInput,
 		return UpdateTransactionInput{}, ErrTransactionTitleRequired
 	}
 
-	category := normalize.Optional(input.Category)
-	if category == "" {
-		return UpdateTransactionInput{}, ErrTransactionCategoryRequired
-	}
-
 	if input.Type != Income && input.Type != Expense {
 		return UpdateTransactionInput{}, ErrTransactionTypeInvalid
+	}
+
+	category, err := normalizeTransactionCategoryInput(input.Category, input.Type)
+	if err != nil {
+		return UpdateTransactionInput{}, err
 	}
 
 	amount, err := normalize.Money(input.Amount)
@@ -255,4 +283,42 @@ func normalizeUpdateInput(input UpdateTransactionInput) (UpdateTransactionInput,
 		Category:    category,
 		Description: strings.TrimSpace(normalize.Optional(input.Description)),
 	}, nil
+}
+
+func (s *service) getTransactions(userID int64, filters TransactionFilters) ([]Transaction, error) {
+	baseFilters, categoryFilter := filters, filters.Category
+	baseFilters.Category = nil
+
+	var normalizedCategoryFilter *string
+	if categoryFilter != nil {
+		categoryKey, err := normalizeTransactionCategoryFilter(*categoryFilter)
+		if err != nil {
+			return nil, err
+		}
+		normalizedCategoryFilter = &categoryKey
+	}
+
+	transactions, err := s.repo.GetAll(userID, baseFilters)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]Transaction, 0, len(transactions))
+	for _, transaction := range transactions {
+		normalizedTransaction := normalizeTransactionForResponse(transaction)
+
+		if normalizedCategoryFilter != nil && normalizedTransaction.Category != *normalizedCategoryFilter {
+			continue
+		}
+
+		result = append(result, normalizedTransaction)
+	}
+
+	return result, nil
+}
+
+func normalizeTransactionForResponse(transaction Transaction) Transaction {
+	transaction.Category = normalizeStoredTransactionCategory(transaction)
+	transaction.CategoryLabel = resolveTransactionCategoryLabel(transaction.Category)
+	return transaction
 }

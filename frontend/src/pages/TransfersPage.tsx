@@ -46,7 +46,7 @@ export function TransfersPage() {
     try {
       const [accountsData, transfersData] = await Promise.all([
         accountsApi.list(),
-        transactionsApi.list({ category: "transfer" }),
+        transactionsApi.list({ category: "transferencia" }),
       ]);
 
       setAccounts(accountsData);

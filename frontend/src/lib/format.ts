@@ -52,3 +52,21 @@ export function formatAccountTypeLabel(value: string): string {
 
   return value.split("_").join(" ");
 }
+
+export function formatCategoryKeyLabel(value: string): string {
+  const normalized = value.trim().toLowerCase();
+
+  if (normalized === "inversion") {
+    return "Inversión";
+  }
+
+  if (normalized === "suscripciones") {
+    return "Suscripciones";
+  }
+
+  if (!normalized) {
+    return "Otros";
+  }
+
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+}
