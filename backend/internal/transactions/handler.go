@@ -205,6 +205,56 @@ func (h *Handler) GetSummary(c *gin.Context) {
 	c.JSON(200, summary)
 }
 
+func (h *Handler) GetDashboard(c *gin.Context) {
+	userID, ok := auth.AbortIfUnauthenticated(c)
+	if !ok {
+		return
+	}
+
+	filters, err := buildTransactionFilters(c)
+	if err != nil {
+		h.handleFilterError(c, err)
+		return
+	}
+
+	dashboard, err := h.service.GetDashboard(userID, filters)
+	if err != nil {
+		httpjson.Error(c, 500, "dashboard_failed", "No se pudo obtener la analítica del dashboard")
+		return
+	}
+
+	c.JSON(200, dashboard)
+}
+
+func (h *Handler) GetDashboardCategoryDetail(c *gin.Context) {
+	userID, ok := auth.AbortIfUnauthenticated(c)
+	if !ok {
+		return
+	}
+
+	filters, err := buildTransactionFilters(c)
+	if err != nil {
+		h.handleFilterError(c, err)
+		return
+	}
+
+	categoryKey := c.Query("category_key")
+	detail, err := h.service.GetDashboardCategoryDetail(userID, filters, categoryKey)
+	if err != nil {
+		switch err {
+		case ErrDashboardCategoryRequired:
+			httpjson.Error(c, 400, "dashboard_category_required", err.Error())
+		case ErrInvalidDashboardCategory:
+			httpjson.Error(c, 400, "dashboard_category_invalid", err.Error())
+		default:
+			httpjson.Error(c, 500, "dashboard_category_failed", "No se pudo obtener el detalle de la categoría")
+		}
+		return
+	}
+
+	c.JSON(200, detail)
+}
+
 func (h *Handler) GetByID(c *gin.Context) {
 	userID, ok := auth.AbortIfUnauthenticated(c)
 	if !ok {

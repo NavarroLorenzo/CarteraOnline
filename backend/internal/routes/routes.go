@@ -61,6 +61,8 @@ func SetupRouter(db *pgxpool.Pool, cfg *config.Config) *gin.Engine {
 
 			private.POST("/transactions", transactionHandler.Create)
 			private.GET("/transactions", transactionHandler.GetAll)
+			private.GET("/transactions/dashboard", transactionHandler.GetDashboard)
+			private.GET("/transactions/dashboard/category", transactionHandler.GetDashboardCategoryDetail)
 			private.GET("/transactions/balance", transactionHandler.GetBalance)
 			private.GET("/transactions/balance-by-account", transactionHandler.GetBalanceByAccount)
 			private.GET("/transactions/summary", transactionHandler.GetSummary)

@@ -2,6 +2,8 @@ import { apiRequest } from "./client";
 import type {
   BalanceByAccountResponse,
   BalanceResponse,
+  DashboardAnalytics,
+  DashboardCategoryDetail,
   Transaction,
   TransactionSummary,
   TransactionType,
@@ -51,6 +53,21 @@ export const transactionsApi = {
   getSummary(filters: TransactionFilters = {}) {
     return apiRequest<TransactionSummary>("/transactions/summary", {
       query: filters,
+    });
+  },
+
+  getDashboard(filters: TransactionFilters = {}) {
+    return apiRequest<DashboardAnalytics>("/transactions/dashboard", {
+      query: filters,
+    });
+  },
+
+  getDashboardCategoryDetail(categoryKey: string, filters: TransactionFilters = {}) {
+    return apiRequest<DashboardCategoryDetail>("/transactions/dashboard/category", {
+      query: {
+        ...filters,
+        category_key: categoryKey,
+      },
     });
   },
 

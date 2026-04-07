@@ -37,6 +37,8 @@ type Service interface {
 	GetBalance(userID int64) (float64, error)
 	GetBalanceByAccountDetailed(userID int64) ([]AccountBalance, float64, error)
 	GetSummary(userID int64, filters TransactionFilters) (TransactionSummary, error)
+	GetDashboard(userID int64, filters TransactionFilters) (DashboardAnalytics, error)
+	GetDashboardCategoryDetail(userID int64, filters TransactionFilters, categoryKey string) (DashboardCategoryDetail, error)
 }
 
 type service struct {

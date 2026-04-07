@@ -2,6 +2,7 @@ package transactions
 
 import (
 	"testing"
+	"time"
 
 	"cartera-app/backend/internal/accounts"
 )
@@ -15,6 +16,7 @@ type fakeTransactionsRepo struct {
 	deletedTransferID    string
 	lastUserIDForGetByID int64
 	lastUserIDForDelete  int64
+	transactions         []Transaction
 }
 
 func (f *fakeTransactionsRepo) Create(userID int64, input CreateTransactionInput) (Transaction, error) {
@@ -23,7 +25,37 @@ func (f *fakeTransactionsRepo) Create(userID int64, input CreateTransactionInput
 }
 
 func (f *fakeTransactionsRepo) GetAll(userID int64, filters TransactionFilters) ([]Transaction, error) {
-	return nil, nil
+	result := make([]Transaction, 0)
+
+	for _, transaction := range f.transactions {
+		if transaction.UserID != 0 && transaction.UserID != userID {
+			continue
+		}
+
+		if filters.AccountID != nil && transaction.AccountID != *filters.AccountID {
+			continue
+		}
+
+		if filters.Type != nil && transaction.Type != *filters.Type {
+			continue
+		}
+
+		if filters.Category != nil && transaction.Category != *filters.Category {
+			continue
+		}
+
+		if filters.DateFrom != nil && transaction.CreatedAt.Before(*filters.DateFrom) {
+			continue
+		}
+
+		if filters.DateTo != nil && transaction.CreatedAt.After(*filters.DateTo) {
+			continue
+		}
+
+		result = append(result, transaction)
+	}
+
+	return result, nil
 }
 
 func (f *fakeTransactionsRepo) GetByID(userID, id int64) (Transaction, bool, error) {
@@ -65,8 +97,9 @@ func (f *fakeTransactionsRepo) GetSummary(userID int64, filters TransactionFilte
 }
 
 type fakeAccountsService struct {
-	account accounts.Account
-	found   bool
+	account  accounts.Account
+	found    bool
+	accounts []accounts.Account
 }
 
 func (f *fakeAccountsService) Create(userID int64, input accounts.CreateAccountInput) (accounts.Account, error) {
@@ -74,7 +107,7 @@ func (f *fakeAccountsService) Create(userID int64, input accounts.CreateAccountI
 }
 
 func (f *fakeAccountsService) GetAll(userID int64) ([]accounts.Account, error) {
-	return nil, nil
+	return f.accounts, nil
 }
 
 func (f *fakeAccountsService) GetByID(userID, id int64) (accounts.Account, bool, error) {
@@ -154,4 +187,200 @@ func TestDeleteOtherUserTransactionReturnsNotFound(t *testing.T) {
 	if err != ErrTransactionNotFound {
 		t.Fatalf("expected ErrTransactionNotFound, got %v", err)
 	}
+}
+
+func TestGetDashboardBuildsAnalyticsExcludingTransfersAndInitialBalance(t *testing.T) {
+	repo := &fakeTransactionsRepo{
+		transactions: []Transaction{
+			{
+				ID:        1,
+				UserID:    1,
+				Title:     "Sueldo",
+				Amount:    3000,
+				Type:      Income,
+				AccountID: 10,
+				Category:  "salario",
+				CreatedAt: time.Date(2026, 4, 7, 10, 0, 0, 0, time.UTC),
+			},
+			{
+				ID:        2,
+				UserID:    1,
+				Title:     "Supermercado",
+				Amount:    500,
+				Type:      Expense,
+				AccountID: 10,
+				Category:  "supermercado",
+				CreatedAt: time.Date(2026, 4, 7, 15, 0, 0, 0, time.UTC),
+			},
+			{
+				ID:        3,
+				UserID:    1,
+				Title:     "Taxi",
+				Amount:    120,
+				Type:      Expense,
+				AccountID: 10,
+				Category:  "taxi",
+				CreatedAt: time.Date(2026, 4, 5, 9, 0, 0, 0, time.UTC),
+			},
+			{
+				ID:         4,
+				UserID:     1,
+				Title:      "Transferencia enviada",
+				Amount:     700,
+				Type:       Expense,
+				AccountID:  10,
+				Category:   TransferCategory,
+				TransferID: pointerToString("tr_1"),
+				CreatedAt:  time.Date(2026, 4, 6, 9, 0, 0, 0, time.UTC),
+			},
+			{
+				ID:        5,
+				UserID:    1,
+				Title:     "Saldo inicial",
+				Amount:    900,
+				Type:      Income,
+				AccountID: 10,
+				Category:  InitialBalanceCategory,
+				CreatedAt: time.Date(2026, 4, 1, 8, 0, 0, 0, time.UTC),
+			},
+			{
+				ID:        6,
+				UserID:    1,
+				Title:     "Sueldo marzo",
+				Amount:    2500,
+				Type:      Income,
+				AccountID: 10,
+				Category:  "salario",
+				CreatedAt: time.Date(2026, 3, 5, 10, 0, 0, 0, time.UTC),
+			},
+			{
+				ID:        7,
+				UserID:    1,
+				Title:     "Internet",
+				Amount:    100,
+				Type:      Expense,
+				AccountID: 10,
+				Category:  "internet",
+				CreatedAt: time.Date(2026, 3, 6, 12, 0, 0, 0, time.UTC),
+			},
+		},
+	}
+	accountSvc := &fakeAccountsService{
+		accounts: []accounts.Account{
+			{ID: 10, Name: "Cuenta sueldo"},
+		},
+	}
+
+	service := NewService(repo, accountSvc, accountSvc)
+
+	dateFrom := time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC)
+	dateTo := time.Date(2026, 4, 7, 0, 0, 0, 0, time.UTC)
+
+	dashboard, err := service.GetDashboard(1, TransactionFilters{
+		DateFrom: &dateFrom,
+		DateTo:   &dateTo,
+	})
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+
+	if dashboard.PeriodSummary.IncomeTotal != 3000 {
+		t.Fatalf("expected income total 3000, got %v", dashboard.PeriodSummary.IncomeTotal)
+	}
+	if dashboard.PeriodSummary.ExpenseTotal != 620 {
+		t.Fatalf("expected expense total 620, got %v", dashboard.PeriodSummary.ExpenseTotal)
+	}
+	if dashboard.PeriodSummary.NetBalance != 2380 {
+		t.Fatalf("expected net balance 2380, got %v", dashboard.PeriodSummary.NetBalance)
+	}
+	if len(dashboard.ExpenseCategories) != 2 {
+		t.Fatalf("expected 2 categories, got %d", len(dashboard.ExpenseCategories))
+	}
+	if dashboard.ExpenseCategories[0].Key != DashboardCategoryFood {
+		t.Fatalf("expected first category comida, got %s", dashboard.ExpenseCategories[0].Key)
+	}
+	if len(dashboard.TopExpenses) == 0 || dashboard.TopExpenses[0].Title != "Supermercado" {
+		t.Fatalf("expected top expense Supermercado, got %+v", dashboard.TopExpenses)
+	}
+	if len(dashboard.RecentTransactions) == 0 || dashboard.RecentTransactions[0].AccountName != "Cuenta sueldo" {
+		t.Fatalf("expected recent transactions to include account name, got %+v", dashboard.RecentTransactions)
+	}
+	if dashboard.MonthSummary.IncomeTotal != 3000 {
+		t.Fatalf("expected month income total 3000, got %v", dashboard.MonthSummary.IncomeTotal)
+	}
+	if dashboard.Comparison.PreviousMonth.IncomeTotal != 2500 {
+		t.Fatalf("expected previous month income total 2500, got %v", dashboard.Comparison.PreviousMonth.IncomeTotal)
+	}
+}
+
+func TestGetDashboardCategoryDetailGroupsNormalizedExpenses(t *testing.T) {
+	repo := &fakeTransactionsRepo{
+		transactions: []Transaction{
+			{
+				ID:        1,
+				UserID:    1,
+				Title:     "Supermercado",
+				Amount:    500,
+				Type:      Expense,
+				AccountID: 10,
+				Category:  "supermercado",
+				CreatedAt: time.Date(2026, 4, 7, 15, 0, 0, 0, time.UTC),
+			},
+			{
+				ID:        2,
+				UserID:    1,
+				Title:     "Restaurante",
+				Amount:    200,
+				Type:      Expense,
+				AccountID: 10,
+				Category:  "restaurante",
+				CreatedAt: time.Date(2026, 4, 6, 15, 0, 0, 0, time.UTC),
+			},
+			{
+				ID:        3,
+				UserID:    1,
+				Title:     "Taxi",
+				Amount:    100,
+				Type:      Expense,
+				AccountID: 10,
+				Category:  "taxi",
+				CreatedAt: time.Date(2026, 4, 5, 15, 0, 0, 0, time.UTC),
+			},
+		},
+	}
+	accountSvc := &fakeAccountsService{
+		accounts: []accounts.Account{
+			{ID: 10, Name: "Cuenta sueldo"},
+		},
+	}
+
+	service := NewService(repo, accountSvc, accountSvc)
+
+	dateFrom := time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC)
+	dateTo := time.Date(2026, 4, 7, 0, 0, 0, 0, time.UTC)
+
+	detail, err := service.GetDashboardCategoryDetail(1, TransactionFilters{
+		DateFrom: &dateFrom,
+		DateTo:   &dateTo,
+	}, DashboardCategoryFood)
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+
+	if detail.Category.Amount != 700 {
+		t.Fatalf("expected category amount 700, got %v", detail.Category.Amount)
+	}
+	if detail.Category.TransactionsCount != 2 {
+		t.Fatalf("expected category transactions count 2, got %d", detail.Category.TransactionsCount)
+	}
+	if len(detail.Transactions) != 2 {
+		t.Fatalf("expected 2 category transactions, got %d", len(detail.Transactions))
+	}
+	if detail.Transactions[0].CategoryLabel != "Comida" {
+		t.Fatalf("expected normalized category label Comida, got %s", detail.Transactions[0].CategoryLabel)
+	}
+}
+
+func pointerToString(value string) *string {
+	return &value
 }
