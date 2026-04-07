@@ -13,11 +13,21 @@ export function formatCurrency(value: number): string {
   return currencyFormatter.format(value);
 }
 
-export function formatDate(value: string): string {
-  return dateFormatter.format(new Date(value));
+export function formatDate(value?: string | Date | null): string {
+  if (!value) {
+    return "Fecha no disponible";
+  }
+
+  const parsed = value instanceof Date ? value : new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return "Fecha no disponible";
+  }
+
+  return dateFormatter.format(parsed);
 }
 
-export function formatTypeLabel(value: string): string {
+export function formatTypeLabel(value?: string | null): string {
   if (value === "income") {
     return "Ingreso";
   }
@@ -26,10 +36,14 @@ export function formatTypeLabel(value: string): string {
     return "Gasto";
   }
 
+  if (!value) {
+    return "Sin tipo";
+  }
+
   return value.split("_").join(" ");
 }
 
-export function formatAccountTypeLabel(value: string): string {
+export function formatAccountTypeLabel(value?: string | null): string {
   if (value === "cash") {
     return "Efectivo";
   }
@@ -50,11 +64,15 @@ export function formatAccountTypeLabel(value: string): string {
     return "Ahorro";
   }
 
+  if (!value) {
+    return "Sin tipo";
+  }
+
   return value.split("_").join(" ");
 }
 
-export function formatCategoryKeyLabel(value: string): string {
-  const normalized = value.trim().toLowerCase();
+export function formatCategoryKeyLabel(value?: string | null): string {
+  const normalized = value?.trim().toLowerCase() ?? "";
 
   if (normalized === "inversion") {
     return "Inversión";

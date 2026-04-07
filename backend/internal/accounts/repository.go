@@ -208,11 +208,22 @@ func (r *PostgresRepository) Delete(userID, id int64) (bool, error) {
 	}
 	defer tx.Rollback(context.Background())
 
-	// Solo borra las transacciones de esta cuenta. Si una transferencia tiene
-	// su contraparte en otra cuenta, esa otra transacción se conserva.
+	// Borra las transacciones de la cuenta y también cualquier contraparte
+	// de transferencia vinculada por transfer_id para no dejar movimientos
+	// huérfanos en otras cuentas.
 	deleteTransactionsQuery := `
 		DELETE FROM transactions
-		WHERE user_id = $1 AND account_id = $2
+		WHERE user_id = $1
+			AND (
+				account_id = $2
+				OR transfer_id IN (
+					SELECT DISTINCT transfer_id
+					FROM transactions
+					WHERE user_id = $1
+						AND account_id = $2
+						AND transfer_id IS NOT NULL
+				)
+			)
 	`
 	if _, err := tx.Exec(context.Background(), deleteTransactionsQuery, userID, id); err != nil {
 		return false, err

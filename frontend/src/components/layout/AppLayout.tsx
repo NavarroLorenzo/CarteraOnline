@@ -10,7 +10,15 @@ export function AppLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   if (!user) {
-    return null;
+    return (
+      <div className="route-state">
+        <div className="route-state__card">
+          <span className="eyebrow">Sincronizando sesión</span>
+          <h1>Estamos recuperando tu espacio</h1>
+          <p>La sesión sigue cargando. Probá recargar si esta vista no avanza.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
