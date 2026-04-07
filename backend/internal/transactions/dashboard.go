@@ -556,10 +556,6 @@ func buildHourlyTrendPoints(transactions []Transaction, dateFrom, dateTo time.Ti
 }
 
 func buildSingleDayTrendPoint(transactions []Transaction, dateFrom time.Time) []DashboardTrendPoint {
-	if len(transactions) == 0 {
-		return nil
-	}
-
 	point := DashboardTrendPoint{
 		Label:     "Hoy",
 		StartDate: startOfDay(dateFrom),

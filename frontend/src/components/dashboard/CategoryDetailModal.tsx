@@ -20,6 +20,8 @@ export function CategoryDetailModal({
   onClose,
   onCategorySelect,
 }: CategoryDetailModalProps) {
+  const detailTransactions = detail?.transactions ?? [];
+
   return (
     <AnimatePresence>
       {detail || loading ? (
@@ -83,10 +85,10 @@ export function CategoryDetailModal({
                 </div>
 
                 <div className="stack-list">
-                  {detail.transactions.length === 0 ? (
+                  {detailTransactions.length === 0 ? (
                     <div className="chart-empty">No hay movimientos para esta categoría en el período activo.</div>
                   ) : (
-                    detail.transactions.map((transaction) => (
+                    detailTransactions.map((transaction) => (
                       <div
                         key={transaction.id}
                         className={`list-row list-row--transaction list-row--${transaction.type}`}

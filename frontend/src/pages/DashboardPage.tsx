@@ -117,6 +117,7 @@ export function DashboardPage() {
   const topExpenses = dashboard?.top_expenses ?? [];
   const categories = dashboard?.expense_categories ?? [];
   const comparison = dashboard?.comparison;
+  const trendPoints = dashboard?.trend ?? [];
 
   return (
     <div className="page-stack">
@@ -245,8 +246,8 @@ export function DashboardPage() {
               </div>
             </div>
 
-            {dashboard && dashboard.trend.length > 0 ? (
-              <IncomeExpenseBarChart points={dashboard.trend} />
+            {trendPoints.length > 0 ? (
+              <IncomeExpenseBarChart points={trendPoints} />
             ) : (
               <EmptyState
                 title="Sin tendencia disponible"
