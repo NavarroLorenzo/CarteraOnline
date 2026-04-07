@@ -366,7 +366,14 @@ export function TransactionsPage() {
           </form>
 
           {loading ? (
-            <p className="feedback">Cargando movimientos...</p>
+            <motion.p
+              className="feedback"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            >
+              Cargando movimientos...
+            </motion.p>
           ) : orderedTransactions.length === 0 ? (
             <EmptyState
               title="No hay resultados"

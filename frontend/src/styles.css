@@ -224,6 +224,21 @@ textarea {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-md);
   backdrop-filter: blur(12px);
+  transition:
+    transform 220ms ease,
+    border-color 220ms ease,
+    background-color 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.auth-hero__stats div:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.13);
+  box-shadow: 0 18px 30px rgba(10, 24, 21, 0.14);
+}
+
+.auth-hero__stats--compact {
+  margin-top: 2rem;
 }
 
 .auth-panel--form {

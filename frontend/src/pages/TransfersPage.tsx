@@ -170,9 +170,14 @@ export function TransfersPage() {
             </label>
 
             {accounts.length < 2 ? (
-              <p className="feedback feedback--warning">
+              <motion.p
+                className="feedback feedback--warning"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+              >
                 Necesitás al menos dos cuentas para poder transferir.
-              </p>
+              </motion.p>
             ) : null}
             <PresenceMessage className="feedback feedback--error">{error}</PresenceMessage>
             <PresenceMessage className="feedback feedback--success">{success}</PresenceMessage>
@@ -199,7 +204,14 @@ export function TransfersPage() {
           </div>
 
           {loading ? (
-            <p className="feedback">Cargando transferencias...</p>
+            <motion.p
+              className="feedback"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            >
+              Cargando transferencias...
+            </motion.p>
           ) : orderedTransfers.length === 0 ? (
             <EmptyState
               title="No hay transferencias registradas"

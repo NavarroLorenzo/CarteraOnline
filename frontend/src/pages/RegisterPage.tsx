@@ -1,7 +1,33 @@
+import { motion } from "framer-motion";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
+import {
+  PresenceMessage,
+  StaggerGroup,
+  buttonHover,
+  cardHover,
+  fadeLeft,
+  fadeRight,
+  fadeUp,
+  scaleIn,
+} from "../components/ui/animation";
+
+const registerStats = [
+  {
+    title: "Alta simple",
+    description: "Creá tu usuario y entrá directo a tu panel.",
+  },
+  {
+    title: "Base ordenada",
+    description: "Cuentas, movimientos y transferencias desde el primer día.",
+  },
+  {
+    title: "Seguimiento claro",
+    description: "Cada cambio queda visible en tu historial personal.",
+  },
+];
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -33,24 +59,35 @@ export function RegisterPage() {
   };
 
   return (
-    <div className="auth-shell">
-      <section className="auth-panel auth-panel--hero auth-panel--hero-alt">
-        <span className="eyebrow">Primer paso</span>
-        <h1>Creá tu usuario y empezá a ordenar tus finanzas.</h1>
-        <p>
+    <StaggerGroup className="auth-shell">
+      <motion.section className="auth-panel auth-panel--hero auth-panel--hero-alt" variants={fadeLeft}>
+        <motion.span className="eyebrow" variants={fadeUp}>
+          Primer paso
+        </motion.span>
+        <motion.h1 variants={fadeUp}>Creá tu usuario y empezá a ordenar tus finanzas.</motion.h1>
+        <motion.p variants={fadeUp}>
           Después vas a poder cargar cuentas, registrar ingresos y gastos, y mover saldo entre tus cuentas.
-        </p>
-      </section>
+        </motion.p>
 
-      <section className="auth-panel auth-panel--form auth-panel--form-register">
-        <div className="auth-form__header">
+        <motion.div className="auth-hero__stats auth-hero__stats--compact" variants={fadeUp}>
+          {registerStats.map((item) => (
+            <motion.div key={item.title} variants={scaleIn} whileHover={cardHover}>
+              <strong>{item.title}</strong>
+              <span>{item.description}</span>
+            </motion.div>
+          ))}
+        </motion.div>
+      </motion.section>
+
+      <motion.section className="auth-panel auth-panel--form auth-panel--form-register" variants={fadeRight}>
+        <motion.div className="auth-form__header" variants={fadeUp}>
           <span className="eyebrow">Registro</span>
           <h2>Nuevo usuario</h2>
           <p>Completá tus datos para entrar directo a tu panel personal.</p>
-        </div>
+        </motion.div>
 
-        <form className="stack-form" onSubmit={handleSubmit}>
-          <label className="field">
+        <motion.form className="stack-form" onSubmit={handleSubmit} variants={fadeUp}>
+          <motion.label className="field" variants={fadeUp}>
             <span>Email</span>
             <input
               type="email"
@@ -59,9 +96,9 @@ export function RegisterPage() {
               placeholder="nombre@mail.com"
               required
             />
-          </label>
+          </motion.label>
 
-          <label className="field">
+          <motion.label className="field" variants={fadeUp}>
             <span>Usuario</span>
             <input
               type="text"
@@ -70,9 +107,9 @@ export function RegisterPage() {
               placeholder="tuusuario"
               required
             />
-          </label>
+          </motion.label>
 
-          <label className="field">
+          <motion.label className="field" variants={fadeUp}>
             <span>Contraseña</span>
             <input
               type="password"
@@ -81,19 +118,21 @@ export function RegisterPage() {
               placeholder="mínimo 8 caracteres"
               required
             />
-          </label>
+          </motion.label>
 
-          {error ? <p className="feedback feedback--error">{error}</p> : null}
+          <PresenceMessage className="feedback feedback--error">{error}</PresenceMessage>
 
-          <button type="submit" className="primary-button" disabled={submitting}>
-            {submitting ? "Creando cuenta..." : "Registrarme"}
-          </button>
-        </form>
+          <motion.div variants={fadeUp} whileHover={buttonHover} whileTap={{ scale: 0.995 }}>
+            <button type="submit" className="primary-button" disabled={submitting}>
+              {submitting ? "Creando cuenta..." : "Registrarme"}
+            </button>
+          </motion.div>
+        </motion.form>
 
-        <p className="auth-switch">
+        <motion.p className="auth-switch" variants={fadeUp}>
           ¿Ya tenés cuenta? <Link to="/login">Iniciar sesión</Link>
-        </p>
-      </section>
-    </div>
+        </motion.p>
+      </motion.section>
+    </StaggerGroup>
   );
 }

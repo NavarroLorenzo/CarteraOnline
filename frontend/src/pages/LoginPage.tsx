@@ -1,7 +1,33 @@
+import { motion } from "framer-motion";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
+import {
+  PresenceMessage,
+  StaggerGroup,
+  buttonHover,
+  cardHover,
+  fadeLeft,
+  fadeRight,
+  fadeUp,
+  scaleIn,
+} from "../components/ui/animation";
+
+const loginStats = [
+  {
+    title: "Sesion segura",
+    description: "Acceso protegido con token",
+  },
+  {
+    title: "Tu espacio",
+    description: "Cada usuario ve solo lo suyo",
+  },
+  {
+    title: "Todo conectado",
+    description: "Cuentas, movimientos y transferencias",
+  },
+];
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -34,45 +60,43 @@ export function LoginPage() {
   };
 
   return (
-    <div className="auth-shell">
-      <section className="auth-panel auth-panel--hero">
-        <span className="eyebrow">Finanzas en orden</span>
-        <h1>Entrá y retomá el control de tu dinero.</h1>
-        <p>
+    <StaggerGroup className="auth-shell">
+      <motion.section className="auth-panel auth-panel--hero" variants={fadeLeft}>
+        <motion.span className="eyebrow" variants={fadeUp}>
+          Finanzas en orden
+        </motion.span>
+        <motion.h1 variants={fadeUp}>Entrá y retomá el control de tu dinero.</motion.h1>
+        <motion.p variants={fadeUp}>
           Accedé a tus cuentas, movimientos y transferencias desde un solo lugar, con tu sesión protegida.
-        </p>
+        </motion.p>
 
-        <div className="auth-hero__stats">
-          <div>
-            <strong>Sesión segura</strong>
-            <span>Acceso protegido con token</span>
-          </div>
-          <div>
-            <strong>Tu espacio</strong>
-            <span>Cada usuario ve solo lo suyo</span>
-          </div>
-          <div>
-            <strong>Todo conectado</strong>
-            <span>Cuentas, movimientos y transferencias</span>
-          </div>
-        </div>
-      </section>
+        <motion.div className="auth-hero__stats" variants={fadeUp}>
+          {loginStats.map((item) => (
+            <motion.div key={item.title} variants={scaleIn} whileHover={cardHover}>
+              <strong>{item.title}</strong>
+              <span>{item.description}</span>
+            </motion.div>
+          ))}
+        </motion.div>
+      </motion.section>
 
-      <section className="auth-panel auth-panel--form auth-panel--form-login">
-        <div className="auth-panel__actions">
-          <Link to="/" className="ghost-button auth-back-button">
-            Volver al inicio
-          </Link>
-        </div>
+      <motion.section className="auth-panel auth-panel--form auth-panel--form-login" variants={fadeRight}>
+        <motion.div className="auth-panel__actions" variants={fadeUp}>
+          <motion.div whileHover={buttonHover} whileTap={{ scale: 0.99 }}>
+            <Link to="/" className="ghost-button auth-back-button">
+              Volver al inicio
+            </Link>
+          </motion.div>
+        </motion.div>
 
-        <div className="auth-form__header">
+        <motion.div className="auth-form__header" variants={fadeUp}>
           <span className="eyebrow">Login</span>
           <h2>Bienvenido de nuevo</h2>
           <p>Podés ingresar con tu email o con tu nombre de usuario.</p>
-        </div>
+        </motion.div>
 
-        <form className="stack-form" onSubmit={handleSubmit}>
-          <label className="field">
+        <motion.form className="stack-form" onSubmit={handleSubmit} variants={fadeUp}>
+          <motion.label className="field" variants={fadeUp}>
             <span>Usuario o email</span>
             <input
               type="text"
@@ -81,9 +105,9 @@ export function LoginPage() {
               placeholder="usuario1 o usuario1@mail.com"
               required
             />
-          </label>
+          </motion.label>
 
-          <label className="field">
+          <motion.label className="field" variants={fadeUp}>
             <span>Contraseña</span>
             <input
               type="password"
@@ -92,19 +116,21 @@ export function LoginPage() {
               placeholder="••••••"
               required
             />
-          </label>
+          </motion.label>
 
-          {error ? <p className="feedback feedback--error">{error}</p> : null}
+          <PresenceMessage className="feedback feedback--error">{error}</PresenceMessage>
 
-          <button type="submit" className="primary-button" disabled={submitting}>
-            {submitting ? "Ingresando..." : "Iniciar sesión"}
-          </button>
-        </form>
+          <motion.div variants={fadeUp} whileHover={buttonHover} whileTap={{ scale: 0.995 }}>
+            <button type="submit" className="primary-button" disabled={submitting}>
+              {submitting ? "Ingresando..." : "Iniciar sesión"}
+            </button>
+          </motion.div>
+        </motion.form>
 
-        <p className="auth-switch">
+        <motion.p className="auth-switch" variants={fadeUp}>
           ¿No tenés cuenta? <Link to="/register">Crear usuario</Link>
-        </p>
-      </section>
-    </div>
+        </motion.p>
+      </motion.section>
+    </StaggerGroup>
   );
 }
