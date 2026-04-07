@@ -60,7 +60,7 @@ export function LoginPage() {
   };
 
   return (
-    <StaggerGroup className="auth-shell">
+    <StaggerGroup className="auth-shell" onView={false}>
       <motion.section className="auth-panel auth-panel--hero" variants={fadeLeft}>
         <motion.span className="eyebrow" variants={fadeUp}>
           Finanzas en orden

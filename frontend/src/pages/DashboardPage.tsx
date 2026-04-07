@@ -78,7 +78,7 @@ export function DashboardPage() {
 
   return (
     <div className="page-stack">
-      <Reveal>
+      <Reveal onView={false}>
         <section className="hero-card">
           <div>
             <span className="eyebrow">Dashboard</span>
@@ -92,7 +92,7 @@ export function DashboardPage() {
 
       <PresenceMessage className="feedback feedback--error">{error}</PresenceMessage>
 
-      <StaggerGroup className="metrics-grid">
+      <StaggerGroup className="metrics-grid" onView={false}>
         <MetricCard
           label="Balance total"
           value={loading ? "Cargando..." : formatCurrency(totalBalance)}
@@ -114,7 +114,7 @@ export function DashboardPage() {
         />
       </StaggerGroup>
 
-      <StaggerGroup className="dashboard-grid">
+      <StaggerGroup className="dashboard-grid" onView={false}>
         <motion.article className="panel" variants={fadeLeft}>
           <div className="panel-heading">
             <div>
@@ -129,7 +129,7 @@ export function DashboardPage() {
               description="Creá tu primera cuenta desde la sección Cuentas para empezar."
             />
           ) : (
-            <StaggerGroup className="stack-list">
+            <StaggerGroup className="stack-list" onView={false}>
               {balances.map((account) => (
                 <motion.div
                   key={account.id}
@@ -162,7 +162,7 @@ export function DashboardPage() {
               description="Cuando registres ingresos o gastos, van a aparecer acá."
             />
           ) : (
-            <StaggerGroup className="stack-list">
+            <StaggerGroup className="stack-list" onView={false}>
               {recentTransactions.map((transaction) => (
                 <motion.div
                   key={transaction.id}
@@ -187,7 +187,7 @@ export function DashboardPage() {
         </motion.article>
       </StaggerGroup>
 
-      <Reveal>
+      <Reveal onView={false}>
         <section className="panel">
           <div className="panel-heading">
             <div>
@@ -202,7 +202,7 @@ export function DashboardPage() {
               description="Creá una cuenta nueva para empezar a ver tu cartera resumida acá."
             />
           ) : (
-            <StaggerGroup className="pill-list">
+            <StaggerGroup className="pill-list" onView={false}>
               {accounts.map((account) => (
                 <motion.span
                   key={account.id}

@@ -149,7 +149,7 @@ export function AccountsPage() {
 
   return (
     <div className="page-stack">
-      <Reveal>
+      <Reveal onView={false}>
         <section className="page-header">
           <div>
             <span className="eyebrow">Cuentas</span>
@@ -159,7 +159,7 @@ export function AccountsPage() {
         </section>
       </Reveal>
 
-      <StaggerGroup className="content-grid">
+      <StaggerGroup className="content-grid" onView={false}>
         <motion.article className="panel" variants={fadeLeft}>
           <div className="panel-heading">
             <div>
@@ -272,7 +272,7 @@ export function AccountsPage() {
               description="Creá una cuenta para empezar a separar tu dinero por origen o uso."
             />
           ) : (
-            <StaggerGroup className="stack-list">
+            <StaggerGroup className="stack-list" onView={false}>
               {accounts.map((account) => (
                 <motion.div
                   key={account.id}

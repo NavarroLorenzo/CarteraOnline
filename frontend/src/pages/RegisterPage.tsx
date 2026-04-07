@@ -59,7 +59,7 @@ export function RegisterPage() {
   };
 
   return (
-    <StaggerGroup className="auth-shell">
+    <StaggerGroup className="auth-shell" onView={false}>
       <motion.section className="auth-panel auth-panel--hero auth-panel--hero-alt" variants={fadeLeft}>
         <motion.span className="eyebrow" variants={fadeUp}>
           Primer paso

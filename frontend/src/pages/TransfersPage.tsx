@@ -103,7 +103,7 @@ export function TransfersPage() {
 
   return (
     <div className="page-stack">
-      <Reveal>
+      <Reveal onView={false}>
         <section className="page-header">
           <div>
             <span className="eyebrow">Transferencias</span>
@@ -113,7 +113,7 @@ export function TransfersPage() {
         </section>
       </Reveal>
 
-      <StaggerGroup className="content-grid">
+      <StaggerGroup className="content-grid" onView={false}>
         <motion.article className="panel" variants={fadeLeft}>
           <div className="panel-heading">
             <div>
@@ -218,7 +218,7 @@ export function TransfersPage() {
               description="Cuando hagas la primera, vas a verla reflejada en las cuentas involucradas."
             />
           ) : (
-            <StaggerGroup className="stack-list">
+            <StaggerGroup className="stack-list" onView={false}>
               {orderedTransfers.map((transaction) => (
                 <motion.div
                   key={transaction.id}

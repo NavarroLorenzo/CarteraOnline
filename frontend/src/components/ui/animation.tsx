@@ -114,6 +114,7 @@ type RevealProps = PropsWithChildren<
     variants?: Variants;
     amount?: number;
     once?: boolean;
+    onView?: boolean;
   }
 >;
 
@@ -122,6 +123,7 @@ export function Reveal({
   variants = fadeUp,
   amount = 0.18,
   once = true,
+  onView = true,
   ...props
 }: RevealProps) {
   const reducedMotion = useReducedMotion();
@@ -129,8 +131,9 @@ export function Reveal({
   return (
     <motion.div
       initial="hidden"
-      whileInView="visible"
-      viewport={{ once, amount }}
+      animate={onView ? undefined : "visible"}
+      whileInView={onView ? "visible" : undefined}
+      viewport={onView ? { once, amount } : undefined}
       variants={reducedMotion ? undefined : variants}
       {...props}
     >
@@ -139,16 +142,29 @@ export function Reveal({
   );
 }
 
-type StaggerProps = PropsWithChildren<HTMLMotionProps<"div">>;
+type StaggerProps = PropsWithChildren<
+  HTMLMotionProps<"div"> & {
+    amount?: number;
+    once?: boolean;
+    onView?: boolean;
+  }
+>;
 
-export function StaggerGroup({ children, ...props }: StaggerProps) {
+export function StaggerGroup({
+  children,
+  amount = 0.12,
+  once = true,
+  onView = true,
+  ...props
+}: StaggerProps) {
   const reducedMotion = useReducedMotion();
 
   return (
     <motion.div
       initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, amount: 0.12 }}
+      animate={onView ? undefined : "visible"}
+      whileInView={onView ? "visible" : undefined}
+      viewport={onView ? { once, amount } : undefined}
       variants={reducedMotion ? undefined : staggerContainer}
       {...props}
     >

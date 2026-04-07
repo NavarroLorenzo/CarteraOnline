@@ -157,7 +157,7 @@ export function TransactionsPage() {
 
   return (
     <div className="page-stack">
-      <Reveal>
+      <Reveal onView={false}>
         <section className="page-header">
           <div>
             <span className="eyebrow">Transacciones</span>
@@ -167,7 +167,7 @@ export function TransactionsPage() {
         </section>
       </Reveal>
 
-      <StaggerGroup className="content-grid content-grid--wide">
+      <StaggerGroup className="content-grid content-grid--wide" onView={false}>
         <motion.article className="panel" variants={fadeLeft}>
           <div className="panel-heading">
             <div>
@@ -380,7 +380,7 @@ export function TransactionsPage() {
               description="Probá ajustando los filtros o registrando un movimiento nuevo."
             />
           ) : (
-            <StaggerGroup className="stack-list">
+            <StaggerGroup className="stack-list" onView={false}>
               {orderedTransactions.map((transaction) => (
                 <motion.div
                   key={transaction.id}
