@@ -244,7 +244,7 @@ export function TransactionsPage() {
   );
 
   return (
-    <div className="page-stack">
+    <div className="page-stack page-stack--fill">
       <StaggerGroup className="content-grid content-grid--wide content-grid--viewport-tight" onView={false}>
         <motion.article className="panel" variants={fadeLeft}>
           <div className="panel-heading">

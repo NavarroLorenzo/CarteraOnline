@@ -102,7 +102,7 @@ export function TransfersPage() {
   );
 
   return (
-    <div className="page-stack">
+    <div className="page-stack page-stack--fill">
       <Reveal onView={false}>
         <section className="page-header">
           <div>
