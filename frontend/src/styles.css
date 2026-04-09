@@ -1145,14 +1145,28 @@ textarea {
   min-width: 0;
 }
 
-.page-stack--fill {
+.page-stack--fill,
+.page-stack--fill-single {
   min-height: 0;
-  height: 100%;
+  height: calc(100vh - 7.35rem);
+  overflow: hidden;
+}
+
+.page-stack--fill {
   grid-template-rows: auto minmax(0, 1fr);
 }
 
 .page-stack--fill > :last-child {
   min-height: 0;
+}
+
+.page-stack--fill-single {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.page-stack--fill-single > :only-child {
+  min-height: 0;
+  height: 100%;
 }
 
 .hero-card,
