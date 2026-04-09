@@ -159,7 +159,7 @@ export function AccountsPage() {
         </section>
       </Reveal>
 
-      <StaggerGroup className="content-grid" onView={false}>
+      <StaggerGroup className="content-grid content-grid--viewport" onView={false}>
         <motion.article className="panel" variants={fadeLeft}>
           <div className="panel-heading">
             <div>
@@ -246,7 +246,7 @@ export function AccountsPage() {
           </form>
         </motion.article>
 
-        <motion.article className="panel" variants={fadeRight}>
+        <motion.article className="panel panel--history" variants={fadeRight}>
           <div className="panel-heading">
             <div>
               <span className="eyebrow">Resumen</span>
@@ -257,59 +257,61 @@ export function AccountsPage() {
             </button>
           </div>
 
-          {loading ? (
-            <motion.p
-              className="feedback"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-            >
-              Cargando cuentas...
-            </motion.p>
-          ) : accounts.length === 0 ? (
-            <EmptyState
-              title="No hay cuentas registradas"
-              description="Creá una cuenta para empezar a separar tu dinero por origen o uso."
-            />
-          ) : (
-            <StaggerGroup className="stack-list" onView={false}>
-              {accounts.map((account) => (
-                <motion.div
-                  key={account.id}
-                  className="list-row"
-                  variants={fadeUp}
-                  whileHover={cardHover}
-                  layout
-                >
-                  <div>
-                    <strong>{account.name}</strong>
-                    <p>
-                      {formatAccountTypeLabel(account.type)} · {account.is_active ? "activa" : "inactiva"}
-                    </p>
-                  </div>
-                  <div className="list-row__meta">
-                    <span>{formatDate(account.created_at)}</span>
-                    <div className="action-row action-row--end">
-                      <button
-                        type="button"
-                        className="ghost-button ghost-button--small"
-                        onClick={() => startEditing(account)}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        className="danger-button danger-button--small"
-                        onClick={() => void handleDelete(account)}
-                      >
-                        Borrar
-                      </button>
+          <div className="history-panel__content">
+            {loading ? (
+              <motion.p
+                className="feedback"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+              >
+                Cargando cuentas...
+              </motion.p>
+            ) : accounts.length === 0 ? (
+              <EmptyState
+                title="No hay cuentas registradas"
+                description="Creá una cuenta para empezar a separar tu dinero por origen o uso."
+              />
+            ) : (
+              <StaggerGroup className="stack-list scrollable-list" onView={false}>
+                {accounts.map((account) => (
+                  <motion.div
+                    key={account.id}
+                    className="list-row"
+                    variants={fadeUp}
+                    whileHover={cardHover}
+                    layout
+                  >
+                    <div>
+                      <strong>{account.name}</strong>
+                      <p>
+                        {formatAccountTypeLabel(account.type)} · {account.is_active ? "activa" : "inactiva"}
+                      </p>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
-            </StaggerGroup>
-          )}
+                    <div className="list-row__meta">
+                      <span>{formatDate(account.created_at)}</span>
+                      <div className="action-row action-row--end">
+                        <button
+                          type="button"
+                          className="ghost-button ghost-button--small"
+                          onClick={() => startEditing(account)}
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          className="danger-button danger-button--small"
+                          onClick={() => void handleDelete(account)}
+                        >
+                          Borrar
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </StaggerGroup>
+            )}
+          </div>
         </motion.article>
       </StaggerGroup>
     </div>

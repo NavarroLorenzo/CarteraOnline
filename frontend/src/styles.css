@@ -1787,18 +1787,31 @@ textarea {
 
 .content-grid--wide {
   grid-template-columns: minmax(18rem, 0.85fr) minmax(20rem, 1.15fr);
+  align-items: stretch;
+}
+
+.content-grid--viewport {
+  min-height: max(28rem, calc(100vh - 16rem));
+  align-items: stretch;
+}
+
+.content-grid--viewport-tight {
+  min-height: max(30rem, calc(100vh - 8.75rem));
+  align-items: stretch;
 }
 
 .panel--history {
   min-height: 0;
+  height: 100%;
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
 }
 
 .history-panel__content {
-  min-height: 19rem;
+  min-height: 0;
+  height: 100%;
   display: grid;
-  align-content: start;
+  align-content: stretch;
 }
 
 .stack-list {
@@ -1807,11 +1820,13 @@ textarea {
 }
 
 .scrollable-list {
-  max-height: clamp(18rem, 52vh, 32rem);
+  height: 100%;
+  max-height: none;
   overflow-y: auto;
   padding-right: 0.35rem;
   scroll-behavior: smooth;
   overscroll-behavior: contain;
+  align-content: start;
 }
 
 .scrollable-list::-webkit-scrollbar {
@@ -2088,6 +2103,11 @@ textarea {
   .landing-section--split,
   .landing-feature-grid {
     grid-template-columns: 1fr;
+  }
+
+  .content-grid--viewport,
+  .content-grid--viewport-tight {
+    min-height: auto;
   }
 
   .landing-nav {

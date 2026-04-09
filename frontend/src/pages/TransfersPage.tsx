@@ -113,7 +113,7 @@ export function TransfersPage() {
         </section>
       </Reveal>
 
-      <StaggerGroup className="content-grid" onView={false}>
+      <StaggerGroup className="content-grid content-grid--viewport" onView={false}>
         <motion.article className="panel" variants={fadeLeft}>
           <div className="panel-heading">
             <div>
@@ -192,7 +192,7 @@ export function TransfersPage() {
           </form>
         </motion.article>
 
-        <motion.article className="panel" variants={fadeRight}>
+        <motion.article className="panel panel--history" variants={fadeRight}>
           <div className="panel-heading">
             <div>
               <span className="eyebrow">Historial</span>
@@ -203,44 +203,46 @@ export function TransfersPage() {
             </button>
           </div>
 
-          {loading ? (
-            <motion.p
-              className="feedback"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-            >
-              Cargando transferencias...
-            </motion.p>
-          ) : orderedTransfers.length === 0 ? (
-            <EmptyState
-              title="No hay transferencias registradas"
-              description="Cuando hagas la primera, vas a verla reflejada en las cuentas involucradas."
-            />
-          ) : (
-            <StaggerGroup className="stack-list" onView={false}>
-              {orderedTransfers.map((transaction) => (
-                <motion.div
-                  key={transaction.id}
-                  className="list-row list-row--transaction"
-                  variants={fadeUp}
-                  whileHover={cardHover}
-                  layout
-                >
-                  <div>
-                    <strong>{transaction.title}</strong>
-                    <p>{accountMap.get(transaction.account_id) ?? `Cuenta ${transaction.account_id}`}</p>
-                    {transaction.transfer_id ? <small>ID: {transaction.transfer_id}</small> : null}
-                  </div>
+          <div className="history-panel__content">
+            {loading ? (
+              <motion.p
+                className="feedback"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+              >
+                Cargando transferencias...
+              </motion.p>
+            ) : orderedTransfers.length === 0 ? (
+              <EmptyState
+                title="No hay transferencias registradas"
+                description="Cuando hagas la primera, vas a verla reflejada en las cuentas involucradas."
+              />
+            ) : (
+              <StaggerGroup className="stack-list scrollable-list" onView={false}>
+                {orderedTransfers.map((transaction) => (
+                  <motion.div
+                    key={transaction.id}
+                    className="list-row list-row--transaction"
+                    variants={fadeUp}
+                    whileHover={cardHover}
+                    layout
+                  >
+                    <div>
+                      <strong>{transaction.title}</strong>
+                      <p>{accountMap.get(transaction.account_id) ?? `Cuenta ${transaction.account_id}`}</p>
+                      {transaction.transfer_id ? <small>ID: {transaction.transfer_id}</small> : null}
+                    </div>
 
-                  <div className="list-row__meta">
-                    <strong>{formatCurrency(transaction.amount)}</strong>
-                    <span>{formatDate(transaction.created_at)}</span>
-                  </div>
-                </motion.div>
-              ))}
-            </StaggerGroup>
-          )}
+                    <div className="list-row__meta">
+                      <strong>{formatCurrency(transaction.amount)}</strong>
+                      <span>{formatDate(transaction.created_at)}</span>
+                    </div>
+                  </motion.div>
+                ))}
+              </StaggerGroup>
+            )}
+          </div>
         </motion.article>
       </StaggerGroup>
     </div>

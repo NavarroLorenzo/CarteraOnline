@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { accountsApi } from "../api/accounts";
 import { ApiError } from "../api/client";
 import { transactionsApi, type TransactionFilters } from "../api/transactions";
@@ -30,6 +30,8 @@ const transactionTypeOptions: Array<{ value: TransactionType; label: string; des
 ];
 
 export function TransactionsPage() {
+  const filtersInitializedRef = useRef(false);
+  const latestRequestRef = useRef(0);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<TransactionCategory[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -111,6 +113,8 @@ export function TransactionsPage() {
   const loadInitialData = async () => {
     setLoading(true);
     setError(null);
+    const requestId = latestRequestRef.current + 1;
+    latestRequestRef.current = requestId;
 
     try {
       const [accountsData, categoriesData, transactionsData] = await Promise.all([
@@ -119,13 +123,22 @@ export function TransactionsPage() {
         transactionsApi.list(filters),
       ]);
 
+      if (requestId !== latestRequestRef.current) {
+        return;
+      }
+
       setAccounts(accountsData);
       setCategories(categoriesData);
       setTransactions(transactionsData);
+      filtersInitializedRef.current = true;
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudieron cargar las transacciones");
+      if (requestId === latestRequestRef.current) {
+        setError(err instanceof ApiError ? err.message : "No se pudieron cargar las transacciones");
+      }
     } finally {
-      setLoading(false);
+      if (requestId === latestRequestRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -147,16 +160,35 @@ export function TransactionsPage() {
   const refreshTransactions = async (nextFilters = filters) => {
     setLoading(true);
     setError(null);
+    const requestId = latestRequestRef.current + 1;
+    latestRequestRef.current = requestId;
 
     try {
       const data = await transactionsApi.list(nextFilters);
+
+      if (requestId !== latestRequestRef.current) {
+        return;
+      }
+
       setTransactions(data);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudieron cargar las transacciones");
+      if (requestId === latestRequestRef.current) {
+        setError(err instanceof ApiError ? err.message : "No se pudieron cargar las transacciones");
+      }
     } finally {
-      setLoading(false);
+      if (requestId === latestRequestRef.current) {
+        setLoading(false);
+      }
     }
   };
+
+  useEffect(() => {
+    if (!filtersInitializedRef.current) {
+      return;
+    }
+
+    void refreshTransactions(filters);
+  }, [filters]);
 
   const handleCreate = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -205,11 +237,6 @@ export function TransactionsPage() {
     }
   };
 
-  const handleFilterSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    await refreshTransactions(filters);
-  };
-
   const orderedTransactions = useMemo(
     () =>
       [...transactions].sort((left, right) => Date.parse(right.created_at) - Date.parse(left.created_at)),
@@ -218,17 +245,7 @@ export function TransactionsPage() {
 
   return (
     <div className="page-stack">
-      <Reveal onView={false}>
-        <section className="page-header">
-          <div>
-            <span className="eyebrow">Transacciones</span>
-            <h1>Registrá movimientos en pocos clics</h1>
-            <p>Elegí tipo, categoría y cuenta desde una grilla rápida, y revisá tu historial sin perder contexto.</p>
-          </div>
-        </section>
-      </Reveal>
-
-      <StaggerGroup className="content-grid content-grid--wide" onView={false}>
+      <StaggerGroup className="content-grid content-grid--wide content-grid--viewport-tight" onView={false}>
         <motion.article className="panel" variants={fadeLeft}>
           <div className="panel-heading">
             <div>
@@ -321,7 +338,7 @@ export function TransactionsPage() {
             </div>
           </div>
 
-          <form className="stack-form stack-form--compact" onSubmit={handleFilterSubmit}>
+          <form className="stack-form stack-form--compact">
             <div className="field-grid">
               <label className="field">
                 <span>Cuenta</span>
@@ -400,9 +417,6 @@ export function TransactionsPage() {
             </div>
 
             <div className="action-row">
-              <button type="submit" className="ghost-button">
-                Aplicar filtros
-              </button>
               <button
                 type="button"
                 className="ghost-button"
@@ -414,7 +428,6 @@ export function TransactionsPage() {
                     date_to: "",
                   };
                   setFilters(cleared);
-                  void refreshTransactions(cleared);
                 }}
               >
                 Limpiar filtros

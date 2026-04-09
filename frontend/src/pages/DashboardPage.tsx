@@ -38,7 +38,7 @@ import type {
 
 export function DashboardPage() {
   const todayString = useMemo(() => toInputDate(new Date()), []);
-  const [preset, setPreset] = useState<DashboardFilterPreset>("today");
+  const [preset, setPreset] = useState<DashboardFilterPreset>("this_month");
   const [mode, setMode] = useState<DashboardMode>("advanced");
   const [customRange, setCustomRange] = useState<DashboardDateRange>({
     date_from: todayString,
