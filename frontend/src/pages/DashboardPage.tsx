@@ -118,6 +118,7 @@ export function DashboardPage() {
   const categories = dashboard?.expense_categories ?? [];
   const comparison = dashboard?.comparison;
   const trendPoints = dashboard?.trend ?? [];
+  const metricFallback = loading ? "Cargando información..." : "Sin datos";
 
   return (
     <div className="page-stack">
@@ -126,10 +127,7 @@ export function DashboardPage() {
           <div className="dashboard-hero__copy">
             <span className="eyebrow">Dashboard</span>
             <h1>Tu analítica financiera en una sola vista</h1>
-            <p>
-              Seguís tu balance, entendés hábitos de gasto y explorás tendencias sin mover la lógica sensible
-              al frontend.
-            </p>
+            <p>Seguís tu balance, entendés tus hábitos de gasto y detectás tendencias con una vista clara y accionable.</p>
           </div>
 
           <DashboardFilterBar
@@ -169,17 +167,17 @@ export function DashboardPage() {
               <StaggerGroup className="dashboard-summary-grid" onView={false}>
                 <SummaryStatCard
                   label="Ingresos del día"
-                  value={daySummary ? formatCurrency(daySummary.income_total) : "Cargando..."}
+                  value={daySummary ? formatCurrency(daySummary.income_total) : metricFallback}
                   tone="positive"
                 />
                 <SummaryStatCard
                   label="Gastos del día"
-                  value={daySummary ? formatCurrency(daySummary.expense_total) : "Cargando..."}
+                  value={daySummary ? formatCurrency(daySummary.expense_total) : metricFallback}
                   tone="negative"
                 />
                 <SummaryStatCard
                   label="Balance del día"
-                  value={daySummary ? formatCurrency(daySummary.net_balance) : "Cargando..."}
+                  value={daySummary ? formatCurrency(daySummary.net_balance) : metricFallback}
                   tone="accent"
                 />
               </StaggerGroup>
@@ -194,17 +192,17 @@ export function DashboardPage() {
               <StaggerGroup className="dashboard-summary-grid" onView={false}>
                 <SummaryStatCard
                   label="Ingresos del mes"
-                  value={monthSummary ? formatCurrency(monthSummary.income_total) : "Cargando..."}
+                  value={monthSummary ? formatCurrency(monthSummary.income_total) : metricFallback}
                   tone="positive"
                 />
                 <SummaryStatCard
                   label="Gastos del mes"
-                  value={monthSummary ? formatCurrency(monthSummary.expense_total) : "Cargando..."}
+                  value={monthSummary ? formatCurrency(monthSummary.expense_total) : metricFallback}
                   tone="negative"
                 />
                 <SummaryStatCard
                   label="Ahorro del mes"
-                  value={monthSummary ? formatCurrency(monthSummary.net_balance) : "Cargando..."}
+                  value={monthSummary ? formatCurrency(monthSummary.net_balance) : metricFallback}
                   tone="accent"
                 />
               </StaggerGroup>
@@ -216,47 +214,28 @@ export function DashboardPage() {
       <StaggerGroup className="metrics-grid" onView={false}>
         <MetricCard
           label="Balance del período"
-          value={periodSummary ? formatCurrency(periodSummary.net_balance) : "Cargando..."}
+          value={periodSummary ? formatCurrency(periodSummary.net_balance) : metricFallback}
           tone="accent"
         />
         <MetricCard
           label="Ingresos analizados"
-          value={periodSummary ? formatCurrency(periodSummary.income_total) : "Cargando..."}
+          value={periodSummary ? formatCurrency(periodSummary.income_total) : metricFallback}
           tone="positive"
         />
         <MetricCard
           label="Gastos analizados"
-          value={periodSummary ? formatCurrency(periodSummary.expense_total) : "Cargando..."}
+          value={periodSummary ? formatCurrency(periodSummary.expense_total) : metricFallback}
           tone="negative"
         />
         <MetricCard
           label="Movimientos del período"
-          value={periodSummary ? String(periodSummary.transactions_count) : "Cargando..."}
+          value={periodSummary ? String(periodSummary.transactions_count) : metricFallback}
         />
       </StaggerGroup>
 
       {mode === "advanced" ? (
         <StaggerGroup className="dashboard-analytics-grid" onView={false}>
-          <motion.article className="panel dashboard-panel dashboard-panel--wide" variants={fadeLeft}>
-            <div className="panel-heading">
-              <div>
-                <span className="eyebrow">Tendencia</span>
-                <h2>Ingresos vs gastos</h2>
-                <p>La serie se adapta automáticamente al rango activo.</p>
-              </div>
-            </div>
-
-            {trendPoints.length > 0 ? (
-              <IncomeExpenseBarChart points={trendPoints} />
-            ) : (
-              <EmptyState
-                title="Sin tendencia disponible"
-                description="Cuando tengas ingresos o gastos en este período, vas a ver la evolución acá."
-              />
-            )}
-          </motion.article>
-
-          <motion.article className="panel dashboard-panel" variants={fadeRight}>
+          <motion.article className="panel dashboard-panel dashboard-panel--comparison" variants={fadeRight}>
             <div className="panel-heading">
               <div>
                 <span className="eyebrow">Comparación</span>
@@ -264,7 +243,9 @@ export function DashboardPage() {
               </div>
             </div>
 
-            {comparison ? (
+            {loading ? (
+              <DashboardPanelLoading />
+            ) : comparison ? (
               <div className="comparison-grid">
                 <ComparisonBlock
                   label="Ingresos"
@@ -283,31 +264,40 @@ export function DashboardPage() {
               </div>
             ) : (
               <EmptyState
-                title="Todavía no hay comparación"
-                description="Hace falta al menos un mes con movimientos para calcular la variación."
+                title="No hay comparación disponible"
+                description="Necesitás movimientos en meses consecutivos para ver esta variación."
               />
             )}
           </motion.article>
 
-          <motion.article className="panel dashboard-panel" variants={fadeLeft}>
+          <motion.article className="panel dashboard-panel dashboard-panel--distribution" variants={fadeLeft}>
             <div className="panel-heading">
               <div>
                 <span className="eyebrow">Categorías</span>
                 <h2>Distribución de gastos</h2>
-                <p>Seleccioná una categoría para abrir su detalle.</p>
+                <p>Seleccioná una categoría para ver su detalle.</p>
               </div>
             </div>
 
-            <StaggerGroup onView={false}>
-              <CategoryPieChart
-                categories={categories}
-                activeCategoryKey={selectedCategoryKey}
-                onCategorySelect={(categoryKey) => void handleCategorySelect(categoryKey)}
+            {loading ? (
+              <DashboardPanelLoading />
+            ) : categories.length === 0 ? (
+              <EmptyState
+                title="No hay gastos para analizar"
+                description="Cuando registres gastos en este período, vas a ver la distribución por categoría."
               />
-            </StaggerGroup>
+            ) : (
+              <StaggerGroup onView={false}>
+                <CategoryPieChart
+                  categories={categories}
+                  activeCategoryKey={selectedCategoryKey}
+                  onCategorySelect={(categoryKey) => void handleCategorySelect(categoryKey)}
+                />
+              </StaggerGroup>
+            )}
           </motion.article>
 
-          <motion.article className="panel dashboard-panel" variants={fadeRight}>
+          <motion.article className="panel dashboard-panel dashboard-panel--top-expenses" variants={fadeRight}>
             <div className="panel-heading">
               <div>
                 <span className="eyebrow">Top gastos</span>
@@ -315,10 +305,12 @@ export function DashboardPage() {
               </div>
             </div>
 
-            {topExpenses.length === 0 ? (
+            {loading ? (
+              <DashboardPanelLoading />
+            ) : topExpenses.length === 0 ? (
               <EmptyState
-                title="No hay gastos para rankear"
-                description="Cuando registres gastos, acá vas a ver cuáles pesan más."
+                title="No hay gastos destacados"
+                description="Cuando registres gastos, este ranking mostrará los importes más altos."
               />
             ) : (
               <StaggerGroup className="stack-list" onView={false}>
@@ -326,6 +318,27 @@ export function DashboardPage() {
                   <TopExpenseRow key={transaction.id} transaction={transaction} />
                 ))}
               </StaggerGroup>
+            )}
+          </motion.article>
+
+          <motion.article className="panel dashboard-panel dashboard-panel--trend" variants={fadeLeft}>
+            <div className="panel-heading">
+              <div>
+                <span className="eyebrow">Tendencia</span>
+                <h2>Ingresos vs gastos</h2>
+                <p>La serie se adapta automáticamente al rango activo.</p>
+              </div>
+            </div>
+
+            {loading ? (
+              <DashboardPanelLoading />
+            ) : trendPoints.length > 0 ? (
+              <IncomeExpenseBarChart points={trendPoints} />
+            ) : (
+              <EmptyState
+                title="No hay tendencia disponible"
+                description="Cuando haya ingresos o gastos en este período, vas a ver la evolución en este panel."
+              />
             )}
           </motion.article>
         </StaggerGroup>
@@ -344,10 +357,12 @@ export function DashboardPage() {
             </Link>
           </div>
 
-          {recentTransactions.length === 0 && !loading ? (
+          {loading ? (
+            <DashboardPanelLoading />
+          ) : recentTransactions.length === 0 ? (
             <EmptyState
               title="No hay movimientos para mostrar"
-              description="Probá otro rango o registrá una transacción para empezar a ver actividad."
+              description="Elegí otro período o registrá una transacción para ver actividad reciente."
             />
           ) : (
             <StaggerGroup className="stack-list" onView={false}>
@@ -459,4 +474,8 @@ function TopExpenseRow({ transaction }: TopExpenseRowProps) {
       </div>
     </motion.div>
   );
+}
+
+function DashboardPanelLoading() {
+  return <p className="feedback">Cargando información...</p>;
 }

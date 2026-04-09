@@ -88,7 +88,7 @@ export function CategoryPieChart({
   }, [activeCategoryKey, categories, hoveredSlice?.category.key]);
 
   if (!chartData) {
-    return <div className="chart-empty">Todavía no hay gastos categorizados para este rango.</div>;
+    return <div className="chart-empty">No hay gastos categorizados para este período.</div>;
   }
 
   return (

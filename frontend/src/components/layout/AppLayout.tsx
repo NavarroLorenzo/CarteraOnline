@@ -2,11 +2,13 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Outlet } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
+import { useServerWakeState } from "../../api/useServerWakeState";
 import { useAuth } from "../../auth/AuthContext";
-import { buttonHover } from "../ui/animation";
+import { PresenceMessage, buttonHover } from "../ui/animation";
 
 export function AppLayout() {
   const { user, logout } = useAuth();
+  const { isWaking } = useServerWakeState();
   const [menuOpen, setMenuOpen] = useState(false);
 
   if (!user) {
@@ -14,8 +16,12 @@ export function AppLayout() {
       <div className="route-state">
         <div className="route-state__card">
           <span className="eyebrow">Sincronizando sesión</span>
-          <h1>Estamos recuperando tu espacio</h1>
-          <p>La sesión sigue cargando. Probá recargar si esta vista no avanza.</p>
+          <h1>Estamos preparando tu espacio</h1>
+          <p>
+            {isWaking
+              ? "El servicio se está iniciando. Tu información aparecerá automáticamente en unos segundos."
+              : "Estamos cargando tu información para abrir el panel."}
+          </p>
         </div>
       </div>
     );
@@ -45,7 +51,7 @@ export function AppLayout() {
             whileHover={buttonHover}
             whileTap={{ scale: 0.98 }}
           >
-            Menu
+            Menú
           </motion.button>
 
           <motion.div
@@ -71,6 +77,10 @@ export function AppLayout() {
             Cerrar sesión
           </motion.button>
         </motion.header>
+
+        <PresenceMessage className="feedback feedback--warning">
+          {isWaking ? "Iniciando servicio, por favor esperá unos segundos..." : null}
+        </PresenceMessage>
 
         <div className="page-content">
           <Outlet />

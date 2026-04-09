@@ -15,12 +15,19 @@ type HoveredGroup = {
   y: number;
 };
 
-const WIDTH = 760;
-const HEIGHT = 340;
+const axisCurrencyFormatter = new Intl.NumberFormat("es-AR", {
+  style: "currency",
+  currency: "ARS",
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+
+const WIDTH = 640;
+const HEIGHT = 300;
 const MARGIN_TOP = 24;
-const MARGIN_RIGHT = 24;
-const MARGIN_BOTTOM = 56;
-const MARGIN_LEFT = 88;
+const MARGIN_RIGHT = 18;
+const MARGIN_BOTTOM = 52;
+const MARGIN_LEFT = 72;
 const TICK_COUNT = 5;
 
 export function IncomeExpenseBarChart({ points }: IncomeExpenseBarChartProps) {
@@ -38,7 +45,7 @@ export function IncomeExpenseBarChart({ points }: IncomeExpenseBarChartProps) {
       1,
     );
     const groupWidth = innerWidth / points.length;
-    const barWidth = Math.min(28, Math.max(12, groupWidth * 0.28));
+    const barWidth = Math.min(24, Math.max(10, groupWidth * 0.28));
     const barGap = Math.max(6, groupWidth * 0.08);
     const baselineY = MARGIN_TOP + innerHeight;
 
@@ -90,7 +97,7 @@ export function IncomeExpenseBarChart({ points }: IncomeExpenseBarChartProps) {
   }, [points]);
 
   if (!chartData) {
-    return <div className="chart-empty">Todavía no hay datos para graficar en este período.</div>;
+    return <div className="chart-empty">No hay datos para graficar en este período.</div>;
   }
 
   return (
@@ -107,7 +114,13 @@ export function IncomeExpenseBarChart({ points }: IncomeExpenseBarChartProps) {
       </div>
 
       <div className="bar-chart__canvas">
-        <svg className="bar-chart__svg" viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img">
+        <svg
+          className="bar-chart__svg"
+          viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+          role="img"
+          aria-label="Comparación entre ingresos y gastos"
+          preserveAspectRatio="xMidYMid meet"
+        >
           {chartData.ticks.map((tick) => (
             <g key={`tick-${tick.y}`}>
               <line
@@ -123,7 +136,7 @@ export function IncomeExpenseBarChart({ points }: IncomeExpenseBarChartProps) {
                 textAnchor="end"
                 className="bar-chart__axis-label"
               >
-                {formatCurrency(tick.value)}
+                {axisCurrencyFormatter.format(tick.value)}
               </text>
             </g>
           ))}

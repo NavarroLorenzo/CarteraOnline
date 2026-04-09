@@ -16,8 +16,8 @@ import {
 
 const loginStats = [
   {
-    title: "Sesion segura",
-    description: "Acceso protegido con token",
+    title: "Sesión segura",
+    description: "Acceso protegido para tu información personal",
   },
   {
     title: "Tu espacio",
@@ -102,7 +102,7 @@ export function LoginPage() {
               type="text"
               value={identifier}
               onChange={(event) => setIdentifier(event.target.value)}
-              placeholder="usuario1 o usuario1@mail.com"
+              placeholder="tuusuario o nombre@mail.com"
               required
             />
           </motion.label>

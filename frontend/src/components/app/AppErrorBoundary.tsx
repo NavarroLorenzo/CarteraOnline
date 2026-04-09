@@ -23,10 +23,9 @@ export class AppErrorBoundary extends Component<PropsWithChildren, AppErrorBound
         <div className="route-state">
           <div className="route-state__card">
             <span className="eyebrow">Recuperación</span>
-            <h1>Tuvimos un problema al renderizar la app</h1>
+            <h1>No pudimos mostrar esta pantalla</h1>
             <p>
-              Ya evitamos la pantalla blanca completa. Probá recargar; si vuelve a pasar, la app ahora
-              debería mantenerse usable mientras revisamos el dato inconsistente.
+              Ocurrió un inconveniente al cargar esta vista. Podés intentarlo nuevamente para seguir usando la app.
             </p>
             <button
               type="button"

@@ -268,7 +268,7 @@ export function AccountsPage() {
             </motion.p>
           ) : accounts.length === 0 ? (
             <EmptyState
-              title="Todavía no tenés cuentas cargadas"
+              title="No hay cuentas registradas"
               description="Creá una cuenta para empezar a separar tu dinero por origen o uso."
             />
           ) : (

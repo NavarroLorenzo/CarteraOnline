@@ -1343,15 +1343,34 @@ textarea {
 .dashboard-analytics-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    "comparison distribution"
+    "top-expenses trend";
   gap: 1.2rem;
+  align-items: stretch;
 }
 
 .dashboard-panel {
   min-width: 0;
+  display: grid;
+  align-content: start;
 }
 
-.dashboard-panel--wide {
-  grid-column: span 2;
+.dashboard-panel--comparison {
+  grid-area: comparison;
+}
+
+.dashboard-panel--distribution {
+  grid-area: distribution;
+}
+
+.dashboard-panel--top-expenses {
+  grid-area: top-expenses;
+}
+
+.dashboard-panel--trend {
+  grid-area: trend;
+  grid-template-rows: auto 1fr;
 }
 
 .comparison-grid {
@@ -1401,7 +1420,9 @@ textarea {
 
 .bar-chart {
   display: grid;
+  grid-template-rows: auto 1fr;
   gap: 0.9rem;
+  height: 100%;
 }
 
 .bar-chart__legend {
@@ -1434,16 +1455,19 @@ textarea {
 
 .bar-chart__canvas {
   position: relative;
+  min-height: 16rem;
   padding: 0.7rem 0.45rem 0.25rem;
   border-radius: var(--radius-lg);
   border: 1px solid rgba(16, 33, 29, 0.08);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 250, 244, 0.7));
+  overflow: hidden;
 }
 
 .bar-chart__svg {
   width: 100%;
-  min-height: 18rem;
+  height: clamp(15rem, 27vw, 17rem);
   overflow: visible;
+  display: block;
 }
 
 .bar-chart__grid {
@@ -1765,9 +1789,43 @@ textarea {
   grid-template-columns: minmax(18rem, 0.85fr) minmax(20rem, 1.15fr);
 }
 
+.panel--history {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.history-panel__content {
+  min-height: 19rem;
+  display: grid;
+  align-content: start;
+}
+
 .stack-list {
   display: grid;
   gap: 0.8rem;
+}
+
+.scrollable-list {
+  max-height: clamp(18rem, 52vh, 32rem);
+  overflow-y: auto;
+  padding-right: 0.35rem;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+}
+
+.scrollable-list::-webkit-scrollbar {
+  width: 0.6rem;
+}
+
+.scrollable-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(15, 59, 52, 0.18);
+}
+
+.scrollable-list::-webkit-scrollbar-track {
+  background: rgba(16, 33, 29, 0.05);
+  border-radius: 999px;
 }
 
 .list-row {
@@ -2010,8 +2068,12 @@ textarea {
     grid-template-columns: 1fr;
   }
 
-  .dashboard-panel--wide {
-    grid-column: auto;
+  .dashboard-analytics-grid {
+    grid-template-areas:
+      "comparison"
+      "distribution"
+      "top-expenses"
+      "trend";
   }
 
   .dashboard-toolbar,

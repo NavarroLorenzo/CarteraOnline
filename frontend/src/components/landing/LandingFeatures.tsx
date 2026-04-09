@@ -31,7 +31,7 @@ export function LandingFeatures() {
         <span className="eyebrow">Qué podés hacer</span>
         <h2>Una base sólida para llevar tus finanzas sin planillas dispersas</h2>
         <p>
-          Todo está pensado para que el backend haga el trabajo importante y vos solo te concentres en entender tu plata.
+          Todo está pensado para que puedas entender tu dinero con claridad y tomar decisiones más rápido.
         </p>
       </Reveal>
 

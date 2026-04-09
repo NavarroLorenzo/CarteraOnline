@@ -313,7 +313,7 @@ export function TransactionsPage() {
           </form>
         </motion.article>
 
-        <motion.article className="panel" variants={fadeRight}>
+        <motion.article className="panel panel--history" variants={fadeRight}>
           <div className="panel-heading">
             <div>
               <span className="eyebrow">Historial</span>
@@ -417,71 +417,73 @@ export function TransactionsPage() {
                   void refreshTransactions(cleared);
                 }}
               >
-                Limpiar
+                Limpiar filtros
               </button>
             </div>
           </form>
 
-          {loading ? (
-            <motion.p
-              className="feedback"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-            >
-              Cargando movimientos...
-            </motion.p>
-          ) : orderedTransactions.length === 0 ? (
-            <EmptyState
-              title="No hay resultados"
-              description="Probá ajustando los filtros o registrando un movimiento nuevo."
-            />
-          ) : (
-            <StaggerGroup className="stack-list" onView={false}>
-              {orderedTransactions.map((transaction) => {
-                const categoryLabel =
-                  transaction.category_label ??
-                  categoryMap.get(transaction.category) ??
-                  formatCategoryKeyLabel(transaction.category);
+          <div className="history-panel__content">
+            {loading ? (
+              <motion.p
+                className="feedback"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+              >
+                Cargando movimientos...
+              </motion.p>
+            ) : orderedTransactions.length === 0 ? (
+              <EmptyState
+                title="No se encontraron movimientos"
+                description="Ajustá los filtros o registrá un movimiento para verlo en este historial."
+              />
+            ) : (
+              <StaggerGroup className="stack-list scrollable-list" onView={false}>
+                {orderedTransactions.map((transaction) => {
+                  const categoryLabel =
+                    transaction.category_label ??
+                    categoryMap.get(transaction.category) ??
+                    formatCategoryKeyLabel(transaction.category);
 
-                return (
-                  <motion.div
-                    key={transaction.id}
-                    className={`list-row list-row--transaction list-row--${transaction.type}`}
-                    variants={fadeUp}
-                    whileHover={cardHover}
-                    layout
-                  >
-                    <div>
-                      <div className="list-row__title">
-                        <strong>{transaction.title}</strong>
-                        <span className={`category-badge category-badge--${transaction.type}`}>
-                          {categoryLabel}
-                        </span>
+                  return (
+                    <motion.div
+                      key={transaction.id}
+                      className={`list-row list-row--transaction list-row--${transaction.type}`}
+                      variants={fadeUp}
+                      whileHover={cardHover}
+                      layout
+                    >
+                      <div>
+                        <div className="list-row__title">
+                          <strong>{transaction.title}</strong>
+                          <span className={`category-badge category-badge--${transaction.type}`}>
+                            {categoryLabel}
+                          </span>
+                        </div>
+                        <p>
+                          {accountMap.get(transaction.account_id) ?? `Cuenta ${transaction.account_id}`} ·{" "}
+                          {formatTypeLabel(transaction.type)}
+                        </p>
+                        {transaction.description ? <small>{transaction.description}</small> : null}
                       </div>
-                      <p>
-                        {accountMap.get(transaction.account_id) ?? `Cuenta ${transaction.account_id}`} ·{" "}
-                        {formatTypeLabel(transaction.type)}
-                      </p>
-                      {transaction.description ? <small>{transaction.description}</small> : null}
-                    </div>
 
-                    <div className="list-row__meta">
-                      <strong>{formatCurrency(transaction.amount)}</strong>
-                      <span>{formatDate(transaction.created_at)}</span>
-                      <button
-                        type="button"
-                        className="danger-link"
-                        onClick={() => void handleDelete(transaction.id)}
-                      >
-                        Eliminar
-                      </button>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </StaggerGroup>
-          )}
+                      <div className="list-row__meta">
+                        <strong>{formatCurrency(transaction.amount)}</strong>
+                        <span>{formatDate(transaction.created_at)}</span>
+                        <button
+                          type="button"
+                          className="danger-link"
+                          onClick={() => void handleDelete(transaction.id)}
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </StaggerGroup>
+            )}
+          </div>
         </motion.article>
       </StaggerGroup>
     </div>

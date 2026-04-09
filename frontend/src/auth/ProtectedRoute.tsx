@@ -1,9 +1,11 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useServerWakeState } from "../api/useServerWakeState";
 import { useAuth } from "./AuthContext";
 
 export function ProtectedRoute() {
   const location = useLocation();
   const { status, isAuthenticated } = useAuth();
+  const { isWaking } = useServerWakeState();
 
   if (status === "loading") {
     return (
@@ -11,7 +13,11 @@ export function ProtectedRoute() {
         <div className="route-state__card">
           <span className="eyebrow">Sincronizando sesión</span>
           <h1>Estamos validando tu acceso</h1>
-          <p>Un momento. Estamos comprobando tu token antes de abrir tus datos.</p>
+          <p>
+            {isWaking
+              ? "El servicio se está iniciando. Vamos a ingresar automáticamente cuando termine de responder."
+              : "Un momento. Estamos comprobando tu acceso para mostrarte la información correcta."}
+          </p>
         </div>
       </div>
     );
