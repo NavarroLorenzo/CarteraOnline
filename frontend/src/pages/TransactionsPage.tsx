@@ -244,8 +244,8 @@ export function TransactionsPage() {
   );
 
   return (
-    <div className="page-stack page-stack--fill-single">
-      <StaggerGroup className="content-grid content-grid--wide content-grid--viewport-tight" onView={false}>
+    <div className="page-stack">
+      <StaggerGroup className="content-grid content-grid--wide" onView={false}>
         <motion.article className="panel" variants={fadeLeft}>
           <div className="panel-heading">
             <div>
@@ -330,7 +330,7 @@ export function TransactionsPage() {
           </form>
         </motion.article>
 
-        <motion.article className="panel panel--history" variants={fadeRight}>
+        <motion.article className="panel panel--history panel--history-transactions" variants={fadeRight}>
           <div className="panel-heading">
             <div>
               <span className="eyebrow">Historial</span>
@@ -451,7 +451,7 @@ export function TransactionsPage() {
                 description="Ajustá los filtros o registrá un movimiento para verlo en este historial."
               />
             ) : (
-              <StaggerGroup className="stack-list scrollable-list" onView={false}>
+              <StaggerGroup className="stack-list scrollable-list scrollable-list--transactions" onView={false}>
                 {orderedTransactions.map((transaction) => {
                   const categoryLabel =
                     transaction.category_label ??

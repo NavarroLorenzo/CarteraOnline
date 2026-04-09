@@ -992,8 +992,7 @@ textarea {
 }
 
 .app-shell {
-  height: 100dvh;
-  overflow: hidden;
+  min-height: 100vh;
   display: grid;
   grid-template-columns: 18.5rem minmax(0, 1fr);
 }
@@ -1001,7 +1000,7 @@ textarea {
 .sidebar {
   position: sticky;
   top: 0;
-  height: 100dvh;
+  height: 100vh;
   padding: 1.6rem;
   display: flex;
   flex-direction: column;
@@ -1106,11 +1105,6 @@ textarea {
 .app-main {
   min-width: 0;
   padding: 1.3rem;
-  min-height: 0;
-  height: 100%;
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
-  overflow: hidden;
 }
 
 .topbar {
@@ -1142,36 +1136,23 @@ textarea {
 
 .page-content {
   min-height: 0;
-  overflow: hidden;
 }
 
 .page-content > div {
   min-width: 0;
-  min-height: 0;
 }
 
 .page-stack--fill,
 .page-stack--fill-single {
   min-height: 0;
-  height: 100%;
-  overflow: hidden;
 }
 
 .page-stack--fill {
-  grid-template-rows: auto minmax(0, 1fr);
-}
-
-.page-stack--fill > :last-child {
-  min-height: 0;
+  grid-template-rows: auto;
 }
 
 .page-stack--fill-single {
-  grid-template-rows: minmax(0, 1fr);
-}
-
-.page-stack--fill-single > :only-child {
-  min-height: 0;
-  height: 100%;
+  grid-template-rows: auto;
 }
 
 .hero-card,
@@ -1826,32 +1807,16 @@ textarea {
   align-items: stretch;
 }
 
-.content-grid--viewport {
-  min-height: 0;
-  height: 100%;
-  align-items: stretch;
-}
-
-.content-grid--viewport-tight {
-  min-height: 0;
-  height: 100%;
-  align-items: stretch;
-}
-
 .panel--history {
   min-height: 0;
-  height: 100%;
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
-  overflow: hidden;
 }
 
 .history-panel__content {
   min-height: 0;
-  height: 100%;
   display: grid;
   align-content: stretch;
-  overflow: hidden;
 }
 
 .stack-list {
@@ -1860,13 +1825,22 @@ textarea {
 }
 
 .scrollable-list {
-  height: 100%;
-  max-height: none;
   overflow-y: auto;
   padding-right: 0.35rem;
   scroll-behavior: smooth;
   overscroll-behavior: contain;
   align-content: start;
+}
+
+.panel--history-transactions {
+  position: sticky;
+  top: 1.3rem;
+  align-self: start;
+}
+
+.scrollable-list--transactions {
+  max-height: calc(100dvh - 27rem);
+  min-height: 18rem;
 }
 
 .scrollable-list::-webkit-scrollbar {
