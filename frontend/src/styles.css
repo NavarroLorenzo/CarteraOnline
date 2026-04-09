@@ -992,7 +992,8 @@ textarea {
 }
 
 .app-shell {
-  min-height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   display: grid;
   grid-template-columns: 18.5rem minmax(0, 1fr);
 }
@@ -1000,7 +1001,7 @@ textarea {
 .sidebar {
   position: sticky;
   top: 0;
-  height: 100vh;
+  height: 100dvh;
   padding: 1.6rem;
   display: flex;
   flex-direction: column;
@@ -1105,9 +1106,11 @@ textarea {
 .app-main {
   min-width: 0;
   padding: 1.3rem;
-  min-height: 100vh;
+  min-height: 0;
+  height: 100%;
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
+  overflow: hidden;
 }
 
 .topbar {
@@ -1139,16 +1142,18 @@ textarea {
 
 .page-content {
   min-height: 0;
+  overflow: hidden;
 }
 
 .page-content > div {
   min-width: 0;
+  min-height: 0;
 }
 
 .page-stack--fill,
 .page-stack--fill-single {
   min-height: 0;
-  height: calc(100vh - 7.35rem);
+  height: 100%;
   overflow: hidden;
 }
 
