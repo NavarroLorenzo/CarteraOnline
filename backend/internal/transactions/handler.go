@@ -13,9 +13,11 @@ import (
 var (
 	ErrInvalidAccountID = errors.New("account_id debe ser numérico")
 	ErrInvalidType      = errors.New("type debe ser income o expense")
+	ErrInvalidPeriod    = errors.New("period debe ser day, week, month, year o custom")
 	ErrInvalidDateFrom  = errors.New("date_from debe tener formato YYYY-MM-DD")
 	ErrInvalidDateTo    = errors.New("date_to debe tener formato YYYY-MM-DD")
 	ErrInvalidDateRange = errors.New("date_from no puede ser mayor que date_to")
+	ErrMissingDateRange = errors.New("dateFrom y dateTo son obligatorios para period=custom")
 )
 
 type Handler struct {
@@ -133,6 +135,16 @@ func (h *Handler) GetBalanceByAccount(c *gin.Context) {
 func buildTransactionFilters(c *gin.Context) (TransactionFilters, error) {
 	var filters TransactionFilters
 
+	if periodStr := firstNonEmptyQuery(c, "period"); periodStr != "" {
+		period := DashboardPeriod(periodStr)
+		switch period {
+		case DashboardPeriodDay, DashboardPeriodWeek, DashboardPeriodMonth, DashboardPeriodYear, DashboardPeriodCustom:
+			filters.Period = &period
+		default:
+			return filters, ErrInvalidPeriod
+		}
+	}
+
 	if accountIDStr := c.Query("account_id"); accountIDStr != "" {
 		accountID, err := strconv.ParseInt(accountIDStr, 10, 64)
 		if err != nil {
@@ -160,7 +172,7 @@ func buildTransactionFilters(c *gin.Context) (TransactionFilters, error) {
 		filters.Category = &categoryKey
 	}
 
-	if dateFromStr := c.Query("date_from"); dateFromStr != "" {
+	if dateFromStr := firstNonEmptyQuery(c, "dateFrom", "date_from"); dateFromStr != "" {
 		dateFrom, err := time.Parse("2006-01-02", dateFromStr)
 		if err != nil {
 			return filters, ErrInvalidDateFrom
@@ -168,7 +180,7 @@ func buildTransactionFilters(c *gin.Context) (TransactionFilters, error) {
 		filters.DateFrom = &dateFrom
 	}
 
-	if dateToStr := c.Query("date_to"); dateToStr != "" {
+	if dateToStr := firstNonEmptyQuery(c, "dateTo", "date_to"); dateToStr != "" {
 		dateTo, err := time.Parse("2006-01-02", dateToStr)
 		if err != nil {
 			return filters, ErrInvalidDateTo
@@ -182,6 +194,10 @@ func buildTransactionFilters(c *gin.Context) (TransactionFilters, error) {
 		return filters, ErrInvalidDateRange
 	}
 
+	if filters.Period != nil && *filters.Period == DashboardPeriodCustom && (filters.DateFrom == nil || filters.DateTo == nil) {
+		return filters, ErrMissingDateRange
+	}
+
 	return filters, nil
 }
 
@@ -191,17 +207,31 @@ func (h *Handler) handleFilterError(c *gin.Context, err error) {
 		httpjson.Error(c, 400, "invalid_account_id", ErrInvalidAccountID.Error())
 	case ErrInvalidType:
 		httpjson.Error(c, 400, "invalid_transaction_type", ErrInvalidType.Error())
+	case ErrInvalidPeriod:
+		httpjson.Error(c, 400, "invalid_dashboard_period", ErrInvalidPeriod.Error())
 	case ErrInvalidDateFrom:
 		httpjson.Error(c, 400, "invalid_date_from", ErrInvalidDateFrom.Error())
 	case ErrInvalidDateTo:
 		httpjson.Error(c, 400, "invalid_date_to", ErrInvalidDateTo.Error())
 	case ErrInvalidDateRange:
 		httpjson.Error(c, 400, "invalid_date_range", ErrInvalidDateRange.Error())
+	case ErrMissingDateRange:
+		httpjson.Error(c, 400, "missing_date_range", ErrMissingDateRange.Error())
 	case ErrTransactionCategoryInvalid:
 		httpjson.Error(c, 400, "invalid_category", ErrTransactionCategoryInvalid.Error())
 	default:
 		httpjson.Error(c, 400, "invalid_filters", "Filtros inválidos")
 	}
+}
+
+func firstNonEmptyQuery(c *gin.Context, keys ...string) string {
+	for _, key := range keys {
+		if value := c.Query(key); value != "" {
+			return value
+		}
+	}
+
+	return ""
 }
 
 func (h *Handler) GetSummary(c *gin.Context) {

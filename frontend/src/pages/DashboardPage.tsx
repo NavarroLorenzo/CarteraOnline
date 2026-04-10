@@ -1,46 +1,40 @@
-import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { transactionsApi } from "../api/transactions";
-import { CategoryPieChart } from "../components/dashboard/CategoryPieChart";
 import { CategoryDetailModal } from "../components/dashboard/CategoryDetailModal";
-import { DashboardFilterBar } from "../components/dashboard/DashboardFilterBar";
-import { IncomeExpenseBarChart } from "../components/dashboard/IncomeExpenseBarChart";
-import { SummaryStatCard } from "../components/dashboard/SummaryStatCard";
-import { EmptyState } from "../components/ui/EmptyState";
+import { DashboardCategoryDistribution } from "../components/dashboard/DashboardCategoryDistribution";
+import { DashboardComparison } from "../components/dashboard/DashboardComparison";
+import { DashboardHeader } from "../components/dashboard/DashboardHeader";
+import { DashboardIncomeVsExpenses } from "../components/dashboard/DashboardIncomeVsExpenses";
+import { DashboardPeriodSelector } from "../components/dashboard/DashboardPeriodSelector";
+import { DashboardRecentTransactions } from "../components/dashboard/DashboardRecentTransactions";
+import { DashboardSummary } from "../components/dashboard/DashboardSummary";
+import { DashboardTopExpenses } from "../components/dashboard/DashboardTopExpenses";
 import { MetricCard } from "../components/ui/MetricCard";
+import { PresenceMessage, Reveal, StaggerGroup } from "../components/ui/animation";
 import {
-  PresenceMessage,
-  Reveal,
-  StaggerGroup,
-  cardHover,
-  fadeLeft,
-  fadeRight,
-  fadeUp,
-} from "../components/ui/animation";
-import {
-  formatDaySummaryLabel,
-  formatMonthSummaryLabel,
-  formatPercent,
+  buildDashboardPeriodQuery,
   getDashboardRange,
+  isDashboardCustomRangeValid,
+  type DashboardActivePeriod,
   type DashboardDateRange,
   type DashboardFilterPreset,
-  type DashboardMode,
   toInputDate,
 } from "../lib/dashboard";
-import { formatCurrency, formatDate, formatTypeLabel } from "../lib/format";
-import type {
-  DashboardAnalytics,
-  DashboardCategoryDetail,
-  DashboardTransactionItem,
-} from "../types/api";
+import { formatCurrency } from "../lib/format";
+import type { DashboardAnalytics, DashboardCategoryDetail } from "../types/api";
 
 export function DashboardPage() {
   const todayString = useMemo(() => toInputDate(new Date()), []);
-  const [preset, setPreset] = useState<DashboardFilterPreset>("this_month");
-  const [mode, setMode] = useState<DashboardMode>("advanced");
-  const [customRange, setCustomRange] = useState<DashboardDateRange>({
+  const [activePeriod, setActivePeriod] = useState<DashboardActivePeriod>({
+    preset: "month",
+    customRange: {
+      date_from: todayString,
+      date_to: todayString,
+    },
+  });
+  const [selectorPreset, setSelectorPreset] = useState<DashboardFilterPreset>("month");
+  const [customRangeDraft, setCustomRangeDraft] = useState<DashboardDateRange>({
     date_from: todayString,
     date_to: todayString,
   });
@@ -51,7 +45,12 @@ export function DashboardPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const activeRange = useMemo(() => getDashboardRange(preset, customRange), [customRange, preset]);
+  const activeRange = useMemo(
+    () => getDashboardRange(activePeriod.preset, activePeriod.customRange),
+    [activePeriod.customRange, activePeriod.preset],
+  );
+  const customRangeValid = useMemo(() => isDashboardCustomRangeValid(customRangeDraft), [customRangeDraft]);
+  const dashboardQuery = useMemo(() => buildDashboardPeriodQuery(activePeriod), [activePeriod]);
 
   useEffect(() => {
     if (!activeRange) {
@@ -68,7 +67,7 @@ export function DashboardPage() {
       setCategoryDetail(null);
 
       try {
-        const data = await transactionsApi.getDashboard(activeRange);
+        const data = await transactionsApi.getDashboard(dashboardQuery);
 
         if (!cancelled) {
           setDashboard(data);
@@ -89,7 +88,7 @@ export function DashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [activeRange]);
+  }, [activeRange, dashboardQuery]);
 
   const handleCategorySelect = async (categoryKey: string) => {
     if (!activeRange) {
@@ -101,7 +100,7 @@ export function DashboardPage() {
     setError(null);
 
     try {
-      const detail = await transactionsApi.getDashboardCategoryDetail(categoryKey, activeRange);
+      const detail = await transactionsApi.getDashboardCategoryDetail(categoryKey, dashboardQuery);
       setCategoryDetail(detail);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "No se pudo cargar el detalle de la categoría");
@@ -110,105 +109,91 @@ export function DashboardPage() {
     }
   };
 
+  const handlePresetChange = (nextPreset: DashboardFilterPreset) => {
+    setSelectorPreset(nextPreset);
+    setError(null);
+
+    if (nextPreset === "custom") {
+      if (activeRange) {
+        setCustomRangeDraft(activeRange);
+      }
+      return;
+    }
+
+    setActivePeriod((current) => ({
+      ...current,
+      preset: nextPreset,
+    }));
+  };
+
+  const handleApplyCustomRange = () => {
+    if (!customRangeValid) {
+      return;
+    }
+
+    setActivePeriod({
+      preset: "custom",
+      customRange: customRangeDraft,
+    });
+    setSelectorPreset("custom");
+    setSelectedCategoryKey(null);
+    setCategoryDetail(null);
+  };
+
+  const handleClearFilters = () => {
+    const resetRange = {
+      date_from: todayString,
+      date_to: todayString,
+    };
+
+    setSelectorPreset("month");
+    setCustomRangeDraft(resetRange);
+    setActivePeriod({
+      preset: "month",
+      customRange: resetRange,
+    });
+    setSelectedCategoryKey(null);
+    setCategoryDetail(null);
+    setError(null);
+  };
+
   const periodSummary = dashboard?.period_summary;
-  const daySummary = dashboard?.day_summary;
-  const monthSummary = dashboard?.month_summary;
   const recentTransactions = dashboard?.recent_transactions ?? [];
   const topExpenses = dashboard?.top_expenses ?? [];
   const categories = dashboard?.expense_categories ?? [];
   const comparison = dashboard?.comparison;
   const trendPoints = dashboard?.trend ?? [];
   const metricFallback = loading ? "Cargando información..." : "Sin datos";
+  const customRangeValidationMessage =
+    selectorPreset === "custom" && !customRangeValid
+      ? "Elegí una fecha desde y una fecha hasta válidas para aplicar el rango personalizado."
+      : null;
 
   return (
     <div className="page-stack">
       <Reveal onView={false}>
-        <section className="hero-card dashboard-hero">
-          <div className="dashboard-hero__copy">
-            <span className="eyebrow">Dashboard</span>
-            <h1>Tu analítica financiera en una sola vista</h1>
-            <p>Seguís tu balance, entendés tus hábitos de gasto y detectás tendencias con una vista clara y accionable.</p>
-          </div>
+        <DashboardHeader />
+      </Reveal>
 
-          <DashboardFilterBar
-            preset={preset}
-            mode={mode}
-            customRange={customRange}
-            loading={loading}
-            onPresetChange={setPreset}
-            onModeChange={setMode}
-            onCustomRangeChange={setCustomRange}
-          />
-
-          {preset === "custom" && !activeRange ? (
-            <p className="feedback feedback--warning">Elegí fecha de inicio y fin para cargar el rango personalizado.</p>
-          ) : null}
-        </section>
+      <Reveal onView={false}>
+        <DashboardPeriodSelector
+          preset={selectorPreset}
+          activePreset={activePeriod.preset}
+          customRange={customRangeDraft}
+          loading={loading}
+          customRangeValid={customRangeValid}
+          validationMessage={customRangeValidationMessage}
+          onPresetChange={handlePresetChange}
+          onCustomRangeChange={setCustomRangeDraft}
+          onApplyCustomRange={handleApplyCustomRange}
+          onClearFilters={handleClearFilters}
+        />
       </Reveal>
 
       <PresenceMessage className="feedback feedback--error">{error}</PresenceMessage>
 
       <Reveal onView={false}>
-        <section className="panel dashboard-summary-panel">
-          <div className="panel-heading">
-            <div>
-              <span className="eyebrow">Resumen clave</span>
-              <h2>Lectura rápida del día y del mes</h2>
-            </div>
-          </div>
-
-          <div className="dashboard-summary-groups">
-            <div className="dashboard-summary-group">
-              <div className="dashboard-summary-group__header">
-                <h3>Resumen del día</h3>
-                <span>{formatDaySummaryLabel(activeRange?.date_to ?? todayString)}</span>
-              </div>
-
-              <StaggerGroup className="dashboard-summary-grid" onView={false}>
-                <SummaryStatCard
-                  label="Ingresos del día"
-                  value={daySummary ? formatCurrency(daySummary.income_total) : metricFallback}
-                  tone="positive"
-                />
-                <SummaryStatCard
-                  label="Gastos del día"
-                  value={daySummary ? formatCurrency(daySummary.expense_total) : metricFallback}
-                  tone="negative"
-                />
-                <SummaryStatCard
-                  label="Balance del día"
-                  value={daySummary ? formatCurrency(daySummary.net_balance) : metricFallback}
-                  tone="accent"
-                />
-              </StaggerGroup>
-            </div>
-
-            <div className="dashboard-summary-group">
-              <div className="dashboard-summary-group__header">
-                <h3>Resumen del mes</h3>
-                <span>{formatMonthSummaryLabel(activeRange?.date_to ?? todayString)}</span>
-              </div>
-
-              <StaggerGroup className="dashboard-summary-grid" onView={false}>
-                <SummaryStatCard
-                  label="Ingresos del mes"
-                  value={monthSummary ? formatCurrency(monthSummary.income_total) : metricFallback}
-                  tone="positive"
-                />
-                <SummaryStatCard
-                  label="Gastos del mes"
-                  value={monthSummary ? formatCurrency(monthSummary.expense_total) : metricFallback}
-                  tone="negative"
-                />
-                <SummaryStatCard
-                  label="Ahorro del mes"
-                  value={monthSummary ? formatCurrency(monthSummary.net_balance) : metricFallback}
-                  tone="accent"
-                />
-              </StaggerGroup>
-            </div>
-          </div>
-        </section>
+        <DashboardSummary preset={activePeriod.preset} range={activeRange} summary={periodSummary} loading={loading} />
       </Reveal>
 
       <StaggerGroup className="metrics-grid" onView={false}>
@@ -233,170 +218,19 @@ export function DashboardPage() {
         />
       </StaggerGroup>
 
-      {mode === "advanced" ? (
-        <StaggerGroup className="dashboard-analytics-grid" onView={false}>
-          <motion.article className="panel dashboard-panel dashboard-panel--comparison" variants={fadeRight}>
-            <div className="panel-heading">
-              <div>
-                <span className="eyebrow">Comparación</span>
-                <h2>Mes actual vs anterior</h2>
-              </div>
-            </div>
+      <StaggerGroup className="dashboard-analytics-grid" onView={false}>
+        <DashboardComparison comparison={comparison} loading={loading} />
+        <DashboardCategoryDistribution
+          categories={categories}
+          activeCategoryKey={selectedCategoryKey}
+          loading={loading}
+          onCategorySelect={(categoryKey) => void handleCategorySelect(categoryKey)}
+        />
+        <DashboardTopExpenses transactions={topExpenses} loading={loading} />
+        <DashboardIncomeVsExpenses points={trendPoints} loading={loading} />
+      </StaggerGroup>
 
-            {loading ? (
-              <DashboardPanelLoading />
-            ) : comparison ? (
-              <div className="comparison-grid">
-                <ComparisonBlock
-                  label="Ingresos"
-                  currentValue={comparison.current_month.income_total}
-                  previousValue={comparison.previous_month.income_total}
-                  change={comparison.income_change_pct}
-                  variant="income"
-                />
-                <ComparisonBlock
-                  label="Gastos"
-                  currentValue={comparison.current_month.expense_total}
-                  previousValue={comparison.previous_month.expense_total}
-                  change={comparison.expense_change_pct}
-                  variant="expense"
-                />
-              </div>
-            ) : (
-              <EmptyState
-                title="No hay comparación disponible"
-                description="Necesitás movimientos en meses consecutivos para ver esta variación."
-              />
-            )}
-          </motion.article>
-
-          <motion.article className="panel dashboard-panel dashboard-panel--distribution" variants={fadeLeft}>
-            <div className="panel-heading">
-              <div>
-                <span className="eyebrow">Categorías</span>
-                <h2>Distribución de gastos</h2>
-                <p>Seleccioná una categoría para ver su detalle.</p>
-              </div>
-            </div>
-
-            {loading ? (
-              <DashboardPanelLoading />
-            ) : categories.length === 0 ? (
-              <EmptyState
-                title="No hay gastos para analizar"
-                description="Cuando registres gastos en este período, vas a ver la distribución por categoría."
-              />
-            ) : (
-              <StaggerGroup onView={false}>
-                <CategoryPieChart
-                  categories={categories}
-                  activeCategoryKey={selectedCategoryKey}
-                  onCategorySelect={(categoryKey) => void handleCategorySelect(categoryKey)}
-                />
-              </StaggerGroup>
-            )}
-          </motion.article>
-
-          <motion.article className="panel dashboard-panel dashboard-panel--top-expenses" variants={fadeRight}>
-            <div className="panel-heading">
-              <div>
-                <span className="eyebrow">Top gastos</span>
-                <h2>Los montos más altos del período</h2>
-              </div>
-            </div>
-
-            {loading ? (
-              <DashboardPanelLoading />
-            ) : topExpenses.length === 0 ? (
-              <EmptyState
-                title="No hay gastos destacados"
-                description="Cuando registres gastos, este ranking mostrará los importes más altos."
-              />
-            ) : (
-              <StaggerGroup className="stack-list" onView={false}>
-                {topExpenses.map((transaction) => (
-                  <TopExpenseRow key={transaction.id} transaction={transaction} />
-                ))}
-              </StaggerGroup>
-            )}
-          </motion.article>
-
-          <motion.article className="panel dashboard-panel dashboard-panel--trend" variants={fadeLeft}>
-            <div className="panel-heading">
-              <div>
-                <span className="eyebrow">Tendencia</span>
-                <h2>Ingresos vs gastos</h2>
-                <p>La serie se adapta automáticamente al rango activo.</p>
-              </div>
-            </div>
-
-            {loading ? (
-              <DashboardPanelLoading />
-            ) : trendPoints.length > 0 ? (
-              <IncomeExpenseBarChart points={trendPoints} />
-            ) : (
-              <EmptyState
-                title="No hay tendencia disponible"
-                description="Cuando haya ingresos o gastos en este período, vas a ver la evolución en este panel."
-              />
-            )}
-          </motion.article>
-        </StaggerGroup>
-      ) : null}
-
-      <Reveal onView={false}>
-        <section className="panel dashboard-panel">
-          <div className="panel-heading">
-            <div>
-              <span className="eyebrow">Actividad</span>
-              <h2>Últimos movimientos</h2>
-              <p>Vista rápida de lo más reciente dentro del filtro actual.</p>
-            </div>
-            <Link to="/transactions" className="ghost-button">
-              Ver todas las transacciones
-            </Link>
-          </div>
-
-          {loading ? (
-            <DashboardPanelLoading />
-          ) : recentTransactions.length === 0 ? (
-            <EmptyState
-              title="No hay movimientos para mostrar"
-              description="Elegí otro período o registrá una transacción para ver actividad reciente."
-            />
-          ) : (
-            <StaggerGroup className="stack-list" onView={false}>
-              {recentTransactions.map((transaction) => (
-                <motion.div
-                  key={transaction.id}
-                  className={`list-row list-row--transaction list-row--${transaction.type}`}
-                  variants={fadeUp}
-                  whileHover={cardHover}
-                >
-                  <div>
-                    <div className="list-row__title">
-                      <strong>{transaction.title}</strong>
-                      <span className={`category-badge category-badge--${transaction.type}`}>
-                        {transaction.category_label}
-                      </span>
-                    </div>
-                    <p>
-                      {transaction.account_name || `Cuenta ${transaction.account_id}`} ·{" "}
-                      {formatTypeLabel(transaction.type)}
-                    </p>
-                    {transaction.description ? <small>{transaction.description}</small> : null}
-                  </div>
-
-                  <div className="list-row__meta">
-                    <strong>{formatCurrency(transaction.amount)}</strong>
-                    <span>{formatDate(transaction.created_at)}</span>
-                  </div>
-                </motion.div>
-              ))}
-            </StaggerGroup>
-          )}
-        </section>
-      </Reveal>
+      <DashboardRecentTransactions transactions={recentTransactions} loading={loading} />
 
       <CategoryDetailModal
         detail={categoryDetail}
@@ -412,70 +246,4 @@ export function DashboardPage() {
       />
     </div>
   );
-}
-
-type ComparisonBlockProps = {
-  label: string;
-  currentValue: number;
-  previousValue: number;
-  change: number;
-  variant: "income" | "expense";
-};
-
-function ComparisonBlock({
-  label,
-  currentValue,
-  previousValue,
-  change,
-  variant,
-}: ComparisonBlockProps) {
-  const direction = change > 0 ? "up" : change < 0 ? "down" : "flat";
-  const isPositive =
-    variant === "expense" ? direction === "down" || direction === "flat" : direction === "up" || direction === "flat";
-  const symbol = direction === "up" ? "↑" : direction === "down" ? "↓" : "•";
-
-  return (
-    <motion.div className="comparison-card" variants={fadeUp}>
-      <span className="comparison-card__label">{label}</span>
-      <strong className="comparison-card__value">{formatCurrency(currentValue)}</strong>
-      <span
-        className={`comparison-card__trend ${
-          isPositive ? "comparison-card__trend--positive" : "comparison-card__trend--negative"
-        }`}
-      >
-        {symbol} {formatPercent(change)}%
-      </span>
-      <small>Mes anterior: {formatCurrency(previousValue)}</small>
-    </motion.div>
-  );
-}
-
-type TopExpenseRowProps = {
-  transaction: DashboardTransactionItem;
-};
-
-function TopExpenseRow({ transaction }: TopExpenseRowProps) {
-  return (
-    <motion.div
-      className="list-row list-row--transaction list-row--expense"
-      variants={fadeUp}
-      whileHover={cardHover}
-    >
-      <div>
-        <strong>{transaction.title}</strong>
-        <p>
-          {transaction.category_label} · {transaction.account_name || `Cuenta ${transaction.account_id}`}
-        </p>
-      </div>
-
-      <div className="list-row__meta">
-        <strong>{formatCurrency(transaction.amount)}</strong>
-        <span>{formatDate(transaction.created_at)}</span>
-      </div>
-    </motion.div>
-  );
-}
-
-function DashboardPanelLoading() {
-  return <p className="feedback">Cargando información...</p>;
 }

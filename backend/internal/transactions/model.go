@@ -9,6 +9,16 @@ const (
 	Expense TransactionType = "expense"
 )
 
+type DashboardPeriod string
+
+const (
+	DashboardPeriodDay    DashboardPeriod = "day"
+	DashboardPeriodWeek   DashboardPeriod = "week"
+	DashboardPeriodMonth  DashboardPeriod = "month"
+	DashboardPeriodYear   DashboardPeriod = "year"
+	DashboardPeriodCustom DashboardPeriod = "custom"
+)
+
 const InitialBalanceTitle = "Saldo inicial"
 const InitialBalanceDescription = "Carga inicial de saldo"
 
@@ -47,6 +57,7 @@ type TransactionFilters struct {
 	AccountID *int64
 	Type      *TransactionType
 	Category  *string
+	Period    *DashboardPeriod
 	DateFrom  *time.Time
 	DateTo    *time.Time
 }

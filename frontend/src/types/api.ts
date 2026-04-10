@@ -53,9 +53,19 @@ export type DashboardSummary = {
   transactions_count: number;
 };
 
+export type DashboardActivePeriod = {
+  key: "day" | "week" | "month" | "year" | "custom";
+  label: string;
+  date_from: string;
+  date_to: string;
+};
+
 export type DashboardComparison = {
-  current_month: DashboardSummary;
-  previous_month: DashboardSummary;
+  title: string;
+  current_label: string;
+  previous_label: string;
+  current: DashboardSummary;
+  previous: DashboardSummary;
   income_change_pct: number;
   expense_change_pct: number;
 };
@@ -90,10 +100,9 @@ export type DashboardTransactionItem = {
 };
 
 export type DashboardAnalytics = {
+  active_period: DashboardActivePeriod;
   period_summary: DashboardSummary;
-  day_summary: DashboardSummary;
-  month_summary: DashboardSummary;
-  comparison: DashboardComparison;
+  comparison?: DashboardComparison;
   trend_interval: "hourly" | "daily" | "weekly" | "monthly";
   trend: DashboardTrendPoint[];
   expense_categories: DashboardCategorySummary[];

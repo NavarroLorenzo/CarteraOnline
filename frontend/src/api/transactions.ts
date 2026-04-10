@@ -9,6 +9,7 @@ import type {
   TransactionSummary,
   TransactionType,
 } from "../types/api";
+import type { DashboardFilterPreset } from "../lib/dashboard";
 
 export type CreateTransactionPayload = {
   title: string;
@@ -25,6 +26,12 @@ export type TransactionFilters = {
   category?: string;
   date_from?: string;
   date_to?: string;
+};
+
+export type DashboardPeriodQuery = {
+  period: DashboardFilterPreset;
+  dateFrom?: string;
+  dateTo?: string;
 };
 
 export const transactionsApi = {
@@ -61,13 +68,13 @@ export const transactionsApi = {
     });
   },
 
-  getDashboard(filters: TransactionFilters = {}) {
+  getDashboard(filters: DashboardPeriodQuery) {
     return apiRequest<DashboardAnalytics>("/transactions/dashboard", {
       query: filters,
     });
   },
 
-  getDashboardCategoryDetail(categoryKey: string, filters: TransactionFilters = {}) {
+  getDashboardCategoryDetail(categoryKey: string, filters: DashboardPeriodQuery) {
     return apiRequest<DashboardCategoryDetail>("/transactions/dashboard/category", {
       query: {
         ...filters,

@@ -18,9 +18,19 @@ type DashboardSummary struct {
 	TransactionsCount int64   `json:"transactions_count"`
 }
 
+type DashboardActivePeriod struct {
+	Key      DashboardPeriod `json:"key"`
+	Label    string          `json:"label"`
+	DateFrom time.Time       `json:"date_from"`
+	DateTo   time.Time       `json:"date_to"`
+}
+
 type DashboardComparison struct {
-	CurrentMonth     DashboardSummary `json:"current_month"`
-	PreviousMonth    DashboardSummary `json:"previous_month"`
+	Title            string           `json:"title"`
+	CurrentLabel     string           `json:"current_label"`
+	PreviousLabel    string           `json:"previous_label"`
+	Current          DashboardSummary `json:"current"`
+	Previous         DashboardSummary `json:"previous"`
 	IncomeChangePct  float64          `json:"income_change_pct"`
 	ExpenseChangePct float64          `json:"expense_change_pct"`
 }
@@ -55,10 +65,9 @@ type DashboardTransactionItem struct {
 }
 
 type DashboardAnalytics struct {
+	ActivePeriod       DashboardActivePeriod      `json:"active_period"`
 	PeriodSummary      DashboardSummary           `json:"period_summary"`
-	DaySummary         DashboardSummary           `json:"day_summary"`
-	MonthSummary       DashboardSummary           `json:"month_summary"`
-	Comparison         DashboardComparison        `json:"comparison"`
+	Comparison         *DashboardComparison       `json:"comparison,omitempty"`
 	TrendInterval      string                     `json:"trend_interval"`
 	Trend              []DashboardTrendPoint      `json:"trend"`
 	ExpenseCategories  []DashboardCategorySummary `json:"expense_categories"`
@@ -74,7 +83,7 @@ type DashboardCategoryDetail struct {
 }
 
 func (s *service) GetDashboard(userID int64, filters TransactionFilters) (DashboardAnalytics, error) {
-	rangeStart, rangeEnd := resolveDashboardRange(filters)
+	activePeriodKey, rangeStart, rangeEnd := resolveDashboardRange(filters)
 
 	periodTransactions, err := s.getTransactions(userID, buildDashboardFilters(filters, rangeStart, rangeEnd))
 	if err != nil {
@@ -87,35 +96,41 @@ func (s *service) GetDashboard(userID int64, filters TransactionFilters) (Dashbo
 	}
 
 	analyticsTransactions := filterDashboardAnalyticsTransactions(periodTransactions)
-	dayStart := startOfDay(rangeEnd)
-	dayEnd := endOfDay(rangeEnd)
+	comparison := (*DashboardComparison)(nil)
+	comparisonStart, comparisonEnd, hasComparison := resolveDashboardComparisonRange(activePeriodKey, rangeStart, rangeEnd)
+	if hasComparison {
+		previousPeriodTransactions, err := s.getTransactions(
+			userID,
+			buildDashboardFilters(filters, comparisonStart, comparisonEnd),
+		)
+		if err != nil {
+			return DashboardAnalytics{}, err
+		}
 
-	monthStart := startOfMonth(rangeEnd)
-	currentMonthTransactions, err := s.getTransactions(userID, buildDashboardFilters(filters, monthStart, rangeEnd))
+		currentSummary := summarizeTransactions(analyticsTransactions)
+		previousSummary := summarizeTransactions(filterDashboardAnalyticsTransactions(previousPeriodTransactions))
+		comparison = buildDashboardComparison(
+			activePeriodKey,
+			currentSummary,
+			previousSummary,
+		)
+	}
+
+	recentTransactions, err := s.getTransactions(userID, buildRecentDashboardFilters(filters))
 	if err != nil {
 		return DashboardAnalytics{}, err
 	}
-
-	previousMonthStart, previousMonthEnd := comparablePreviousMonthRange(rangeEnd)
-	previousMonthTransactions, err := s.getTransactions(userID, buildDashboardFilters(filters, previousMonthStart, previousMonthEnd))
-	if err != nil {
-		return DashboardAnalytics{}, err
-	}
-
-	currentMonthSummary := summarizeTransactions(filterDashboardAnalyticsTransactions(currentMonthTransactions))
-	previousMonthSummary := summarizeTransactions(filterDashboardAnalyticsTransactions(previousMonthTransactions))
 	trendInterval := selectTrendInterval(rangeStart, rangeEnd)
 
 	return DashboardAnalytics{
+		ActivePeriod:       buildDashboardActivePeriod(activePeriodKey, rangeStart, rangeEnd),
 		PeriodSummary:      summarizeTransactions(analyticsTransactions),
-		DaySummary:         summarizeTransactions(filterTransactionsInRange(analyticsTransactions, dayStart, dayEnd)),
-		MonthSummary:       currentMonthSummary,
-		Comparison:         buildDashboardComparison(currentMonthSummary, previousMonthSummary),
+		Comparison:         comparison,
 		TrendInterval:      trendInterval,
 		Trend:              buildTrendPoints(analyticsTransactions, rangeStart, rangeEnd, trendInterval),
 		ExpenseCategories:  buildCategoryBreakdown(analyticsTransactions),
 		TopExpenses:        buildTopExpenses(analyticsTransactions, accountNames),
-		RecentTransactions: buildRecentTransactions(periodTransactions, accountNames),
+		RecentTransactions: buildRecentTransactions(recentTransactions, accountNames),
 	}, nil
 }
 
@@ -125,7 +140,7 @@ func (s *service) GetDashboardCategoryDetail(userID int64, filters TransactionFi
 		return DashboardCategoryDetail{}, err
 	}
 
-	rangeStart, rangeEnd := resolveDashboardRange(filters)
+	_, rangeStart, rangeEnd := resolveDashboardRange(filters)
 	periodTransactions, err := s.getTransactions(userID, buildDashboardFilters(filters, rangeStart, rangeEnd))
 	if err != nil {
 		return DashboardCategoryDetail{}, err
@@ -204,27 +219,60 @@ func buildDashboardFilters(base TransactionFilters, dateFrom, dateTo time.Time) 
 		AccountID: base.AccountID,
 		Type:      base.Type,
 		Category:  base.Category,
+		Period:    base.Period,
 		DateFrom:  &dateFrom,
 		DateTo:    &dateTo,
 	}
 }
 
-func resolveDashboardRange(filters TransactionFilters) (time.Time, time.Time) {
+func buildRecentDashboardFilters(base TransactionFilters) TransactionFilters {
+	return TransactionFilters{
+		AccountID: base.AccountID,
+		Type:      base.Type,
+		Category:  base.Category,
+	}
+}
+
+func resolveDashboardRange(filters TransactionFilters) (DashboardPeriod, time.Time, time.Time) {
 	now := time.Now().UTC()
+	anchor := endOfDay(now)
+
+	if filters.DateTo != nil {
+		anchor = endOfDay(*filters.DateTo)
+	} else if filters.DateFrom != nil {
+		anchor = endOfDay(*filters.DateFrom)
+	}
+
+	if filters.Period != nil {
+		switch *filters.Period {
+		case DashboardPeriodDay:
+			return DashboardPeriodDay, startOfDay(anchor), endOfDay(anchor)
+		case DashboardPeriodWeek:
+			return DashboardPeriodWeek, startOfWeek(anchor), endOfDay(anchor)
+		case DashboardPeriodYear:
+			return DashboardPeriodYear, startOfYear(anchor), endOfDay(anchor)
+		case DashboardPeriodCustom:
+			if filters.DateFrom != nil && filters.DateTo != nil {
+				return DashboardPeriodCustom, startOfDay(*filters.DateFrom), endOfDay(*filters.DateTo)
+			}
+		case DashboardPeriodMonth:
+			return DashboardPeriodMonth, startOfMonth(anchor), endOfDay(anchor)
+		}
+	}
 
 	if filters.DateFrom == nil && filters.DateTo == nil {
-		return startOfDay(now), endOfDay(now)
+		return DashboardPeriodMonth, startOfMonth(anchor), endOfDay(anchor)
 	}
 
 	if filters.DateFrom == nil && filters.DateTo != nil {
-		return startOfDay(*filters.DateTo), endOfDay(*filters.DateTo)
+		return DashboardPeriodDay, startOfDay(*filters.DateTo), endOfDay(*filters.DateTo)
 	}
 
 	if filters.DateFrom != nil && filters.DateTo == nil {
-		return startOfDay(*filters.DateFrom), endOfDay(*filters.DateFrom)
+		return DashboardPeriodDay, startOfDay(*filters.DateFrom), endOfDay(*filters.DateFrom)
 	}
 
-	return startOfDay(*filters.DateFrom), endOfDay(*filters.DateTo)
+	return DashboardPeriodCustom, startOfDay(*filters.DateFrom), endOfDay(*filters.DateTo)
 }
 
 func filterDashboardAnalyticsTransactions(transactions []Transaction) []Transaction {
@@ -243,20 +291,6 @@ func filterDashboardAnalyticsTransactions(transactions []Transaction) []Transact
 
 func isDashboardInternalTransaction(transaction Transaction) bool {
 	return transaction.TransferID != nil || transaction.Category == CategoryTransfer
-}
-
-func filterTransactionsInRange(transactions []Transaction, dateFrom, dateTo time.Time) []Transaction {
-	filtered := make([]Transaction, 0, len(transactions))
-
-	for _, transaction := range transactions {
-		if transaction.CreatedAt.Before(dateFrom) || transaction.CreatedAt.After(dateTo) {
-			continue
-		}
-
-		filtered = append(filtered, transaction)
-	}
-
-	return filtered
 }
 
 func summarizeTransactions(transactions []Transaction) DashboardSummary {
@@ -278,12 +312,30 @@ func summarizeTransactions(transactions []Transaction) DashboardSummary {
 	return summary
 }
 
-func buildDashboardComparison(currentMonth, previousMonth DashboardSummary) DashboardComparison {
-	return DashboardComparison{
-		CurrentMonth:     currentMonth,
-		PreviousMonth:    previousMonth,
-		IncomeChangePct:  calculatePercentageChange(currentMonth.IncomeTotal, previousMonth.IncomeTotal),
-		ExpenseChangePct: calculatePercentageChange(currentMonth.ExpenseTotal, previousMonth.ExpenseTotal),
+func buildDashboardActivePeriod(period DashboardPeriod, dateFrom, dateTo time.Time) DashboardActivePeriod {
+	return DashboardActivePeriod{
+		Key:      period,
+		Label:    dashboardPeriodLabel(period),
+		DateFrom: dateFrom,
+		DateTo:   dateTo,
+	}
+}
+
+func buildDashboardComparison(
+	period DashboardPeriod,
+	current DashboardSummary,
+	previous DashboardSummary,
+) *DashboardComparison {
+	title, currentLabel, previousLabel := dashboardComparisonLabels(period)
+
+	return &DashboardComparison{
+		Title:            title,
+		CurrentLabel:     currentLabel,
+		PreviousLabel:    previousLabel,
+		Current:          current,
+		Previous:         previous,
+		IncomeChangePct:  calculatePercentageChange(current.IncomeTotal, previous.IncomeTotal),
+		ExpenseChangePct: calculatePercentageChange(current.ExpenseTotal, previous.ExpenseTotal),
 	}
 }
 
@@ -598,6 +650,28 @@ func resolveDashboardCategory(value string) (string, string, error) {
 	return key, resolveTransactionCategoryLabel(key), nil
 }
 
+func resolveDashboardComparisonRange(period DashboardPeriod, currentStart, currentEnd time.Time) (time.Time, time.Time, bool) {
+	switch period {
+	case DashboardPeriodDay:
+		previousDay := currentStart.AddDate(0, 0, -1)
+		return startOfDay(previousDay), endOfDay(previousDay), true
+	case DashboardPeriodWeek:
+		previousEnd := endOfDay(currentStart.AddDate(0, 0, -1))
+		return startOfDay(previousEnd.AddDate(0, 0, -(inclusiveDaysBetween(currentStart, currentEnd) - 1))), previousEnd, true
+	case DashboardPeriodMonth:
+		previousStart, previousEnd := comparablePreviousMonthRange(currentEnd)
+		return previousStart, previousEnd, true
+	case DashboardPeriodYear:
+		previousStart, previousEnd := comparablePreviousYearRange(currentEnd)
+		return previousStart, previousEnd, true
+	case DashboardPeriodCustom:
+		previousEnd := endOfDay(currentStart.AddDate(0, 0, -1))
+		return startOfDay(previousEnd.AddDate(0, 0, -(inclusiveDaysBetween(currentStart, currentEnd) - 1))), previousEnd, true
+	default:
+		return time.Time{}, time.Time{}, false
+	}
+}
+
 func comparablePreviousMonthRange(anchor time.Time) (time.Time, time.Time) {
 	currentMonthStart := startOfMonth(anchor)
 	previousMonthAnchor := currentMonthStart.AddDate(0, -1, 0)
@@ -622,6 +696,11 @@ func comparablePreviousMonthRange(anchor time.Time) (time.Time, time.Time) {
 	return previousMonthStart, previousMonthEnd
 }
 
+func comparablePreviousYearRange(anchor time.Time) (time.Time, time.Time) {
+	previousYearAnchor := anchor.AddDate(-1, 0, 0)
+	return startOfYear(previousYearAnchor), endOfDay(previousYearAnchor)
+}
+
 func startOfDay(value time.Time) time.Time {
 	return time.Date(value.Year(), value.Month(), value.Day(), 0, 0, 0, 0, value.Location())
 }
@@ -630,13 +709,30 @@ func endOfDay(value time.Time) time.Time {
 	return time.Date(value.Year(), value.Month(), value.Day(), 23, 59, 59, 0, value.Location())
 }
 
+func startOfWeek(value time.Time) time.Time {
+	weekday := int(value.Weekday())
+	if weekday == 0 {
+		weekday = 7
+	}
+
+	return startOfDay(value.AddDate(0, 0, -(weekday - 1)))
+}
+
 func startOfMonth(value time.Time) time.Time {
 	return time.Date(value.Year(), value.Month(), 1, 0, 0, 0, 0, value.Location())
+}
+
+func startOfYear(value time.Time) time.Time {
+	return time.Date(value.Year(), time.January, 1, 0, 0, 0, 0, value.Location())
 }
 
 func endOfMonth(value time.Time) time.Time {
 	startNextMonth := time.Date(value.Year(), value.Month()+1, 1, 0, 0, 0, 0, value.Location())
 	return startNextMonth.Add(-time.Second)
+}
+
+func inclusiveDaysBetween(start, end time.Time) int {
+	return int(endOfDay(end).Sub(startOfDay(start)).Hours()/24) + 1
 }
 
 func minTime(left, right time.Time) time.Time {
@@ -676,4 +772,38 @@ func formatMonthYear(value time.Time) string {
 	}
 
 	return monthLabels[int(value.Month())-1] + " " + value.Format("2006")
+}
+
+func dashboardPeriodLabel(period DashboardPeriod) string {
+	switch period {
+	case DashboardPeriodDay:
+		return "Día"
+	case DashboardPeriodWeek:
+		return "Semana"
+	case DashboardPeriodYear:
+		return "Año"
+	case DashboardPeriodCustom:
+		return "Rango personalizado"
+	case DashboardPeriodMonth:
+		fallthrough
+	default:
+		return "Mes"
+	}
+}
+
+func dashboardComparisonLabels(period DashboardPeriod) (string, string, string) {
+	switch period {
+	case DashboardPeriodDay:
+		return "Día actual vs anterior", "Día actual", "Día anterior"
+	case DashboardPeriodWeek:
+		return "Semana actual vs anterior", "Semana actual", "Semana anterior"
+	case DashboardPeriodYear:
+		return "Año actual vs anterior", "Año actual", "Año anterior"
+	case DashboardPeriodCustom:
+		return "Período actual vs anterior", "Período actual", "Período anterior"
+	case DashboardPeriodMonth:
+		fallthrough
+	default:
+		return "Mes actual vs anterior", "Mes actual", "Mes anterior"
+	}
 }

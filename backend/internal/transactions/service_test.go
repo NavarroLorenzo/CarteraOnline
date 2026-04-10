@@ -275,6 +275,16 @@ func TestGetDashboardBuildsAnalyticsExcludingTransfersButKeepingInitialBalance(t
 				Category:  "internet",
 				CreatedAt: time.Date(2026, 3, 6, 12, 0, 0, 0, time.UTC),
 			},
+			{
+				ID:        8,
+				UserID:    1,
+				Title:     "Café",
+				Amount:    80,
+				Type:      Expense,
+				AccountID: 10,
+				Category:  "comida",
+				CreatedAt: time.Date(2026, 4, 10, 9, 30, 0, 0, time.UTC),
+			},
 		},
 	}
 	accountSvc := &fakeAccountsService{
@@ -285,12 +295,12 @@ func TestGetDashboardBuildsAnalyticsExcludingTransfersButKeepingInitialBalance(t
 
 	service := NewService(repo, accountSvc, accountSvc)
 
-	dateFrom := time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC)
 	dateTo := time.Date(2026, 4, 7, 0, 0, 0, 0, time.UTC)
+	period := DashboardPeriodMonth
 
 	dashboard, err := service.GetDashboard(1, TransactionFilters{
-		DateFrom: &dateFrom,
-		DateTo:   &dateTo,
+		Period: &period,
+		DateTo: &dateTo,
 	})
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)
@@ -317,14 +327,103 @@ func TestGetDashboardBuildsAnalyticsExcludingTransfersButKeepingInitialBalance(t
 	if len(dashboard.RecentTransactions) == 0 || dashboard.RecentTransactions[0].AccountName != "Cuenta sueldo" {
 		t.Fatalf("expected recent transactions to include account name, got %+v", dashboard.RecentTransactions)
 	}
+	if len(dashboard.RecentTransactions) == 0 || dashboard.RecentTransactions[0].Title != "Café" {
+		t.Fatalf("expected recent transactions to be independent from active period, got %+v", dashboard.RecentTransactions)
+	}
 	if len(dashboard.RecentTransactions) != 5 {
 		t.Fatalf("expected 5 recent transactions, got %d", len(dashboard.RecentTransactions))
 	}
-	if dashboard.MonthSummary.IncomeTotal != 3900 {
-		t.Fatalf("expected month income total 3900, got %v", dashboard.MonthSummary.IncomeTotal)
+	if dashboard.ActivePeriod.Key != DashboardPeriodMonth {
+		t.Fatalf("expected active period month, got %s", dashboard.ActivePeriod.Key)
 	}
-	if dashboard.Comparison.PreviousMonth.IncomeTotal != 2500 {
-		t.Fatalf("expected previous month income total 2500, got %v", dashboard.Comparison.PreviousMonth.IncomeTotal)
+	if dashboard.Comparison == nil {
+		t.Fatal("expected comparison to be returned")
+	}
+	if dashboard.Comparison.Title != "Mes actual vs anterior" {
+		t.Fatalf("expected month comparison title, got %s", dashboard.Comparison.Title)
+	}
+	if dashboard.Comparison.Previous.IncomeTotal != 2500 {
+		t.Fatalf("expected previous month income total 2500, got %v", dashboard.Comparison.Previous.IncomeTotal)
+	}
+}
+
+func TestGetDashboardBuildsEquivalentComparisonForCustomRange(t *testing.T) {
+	repo := &fakeTransactionsRepo{
+		transactions: []Transaction{
+			{
+				ID:        1,
+				UserID:    1,
+				Title:     "Proyecto",
+				Amount:    1500,
+				Type:      Income,
+				AccountID: 10,
+				Category:  "salario",
+				CreatedAt: time.Date(2026, 4, 5, 11, 0, 0, 0, time.UTC),
+			},
+			{
+				ID:        2,
+				UserID:    1,
+				Title:     "Supermercado",
+				Amount:    400,
+				Type:      Expense,
+				AccountID: 10,
+				Category:  "supermercado",
+				CreatedAt: time.Date(2026, 4, 6, 18, 0, 0, 0, time.UTC),
+			},
+			{
+				ID:        3,
+				UserID:    1,
+				Title:     "Proyecto anterior",
+				Amount:    1000,
+				Type:      Income,
+				AccountID: 10,
+				Category:  "salario",
+				CreatedAt: time.Date(2026, 4, 3, 11, 0, 0, 0, time.UTC),
+			},
+			{
+				ID:        4,
+				UserID:    1,
+				Title:     "Taxi anterior",
+				Amount:    120,
+				Type:      Expense,
+				AccountID: 10,
+				Category:  "taxi",
+				CreatedAt: time.Date(2026, 4, 4, 18, 0, 0, 0, time.UTC),
+			},
+		},
+	}
+	accountSvc := &fakeAccountsService{
+		accounts: []accounts.Account{
+			{ID: 10, Name: "Cuenta sueldo"},
+		},
+	}
+
+	service := NewService(repo, accountSvc, accountSvc)
+
+	dateFrom := time.Date(2026, 4, 5, 0, 0, 0, 0, time.UTC)
+	dateTo := time.Date(2026, 4, 6, 0, 0, 0, 0, time.UTC)
+	period := DashboardPeriodCustom
+
+	dashboard, err := service.GetDashboard(1, TransactionFilters{
+		Period:   &period,
+		DateFrom: &dateFrom,
+		DateTo:   &dateTo,
+	})
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+
+	if dashboard.Comparison == nil {
+		t.Fatal("expected custom comparison to be returned")
+	}
+	if dashboard.Comparison.Title != "Período actual vs anterior" {
+		t.Fatalf("expected custom comparison title, got %s", dashboard.Comparison.Title)
+	}
+	if dashboard.Comparison.Previous.IncomeTotal != 1000 {
+		t.Fatalf("expected previous custom income total 1000, got %v", dashboard.Comparison.Previous.IncomeTotal)
+	}
+	if dashboard.Comparison.Previous.ExpenseTotal != 120 {
+		t.Fatalf("expected previous custom expense total 120, got %v", dashboard.Comparison.Previous.ExpenseTotal)
 	}
 }
 
