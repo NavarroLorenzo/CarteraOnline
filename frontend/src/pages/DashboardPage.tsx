@@ -4,7 +4,6 @@ import { transactionsApi } from "../api/transactions";
 import { CategoryDetailModal } from "../components/dashboard/CategoryDetailModal";
 import { DashboardCategoryDistribution } from "../components/dashboard/DashboardCategoryDistribution";
 import { DashboardComparison } from "../components/dashboard/DashboardComparison";
-import { DashboardHeader } from "../components/dashboard/DashboardHeader";
 import { DashboardIncomeVsExpenses } from "../components/dashboard/DashboardIncomeVsExpenses";
 import { DashboardPeriodSelector } from "../components/dashboard/DashboardPeriodSelector";
 import { DashboardRecentTransactions } from "../components/dashboard/DashboardRecentTransactions";
@@ -172,7 +171,6 @@ export function DashboardPage() {
   return (
     <div className="page-stack">
       <Reveal onView={false}>
-        <DashboardHeader />
       </Reveal>
 
       <Reveal onView={false}>
