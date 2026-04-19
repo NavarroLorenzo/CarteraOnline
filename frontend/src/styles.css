@@ -1046,13 +1046,30 @@ textarea {
 
 .sidebar__brand {
   display: flex;
+  gap: 0.95rem;
   align-items: center;
 }
 
-.sidebar__brand-logo {
-  width: 11.6rem;
-  height: 4.35rem;
+.sidebar__brand-icon {
+  width: 2.6rem;
+  height: 2.6rem;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.9);
   box-shadow: 0 18px 34px rgba(3, 22, 18, 0.18);
+}
+
+.sidebar__brand-icon .brand-logo--icon {
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 0.78rem;
+}
+
+.sidebar__brand h1 {
+  margin: 0.15rem 0 0;
+  font-size: 1.2rem;
 }
 
 .sidebar__nav {
