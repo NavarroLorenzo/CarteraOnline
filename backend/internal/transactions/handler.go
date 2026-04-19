@@ -1,8 +1,8 @@
 package transactions
 
 import (
-	"cartera-app/backend/internal/auth"
-	"cartera-app/backend/internal/shared/httpjson"
+	"cenz/backend/internal/auth"
+	"cenz/backend/internal/shared/httpjson"
 	"errors"
 	"strconv"
 	"time"

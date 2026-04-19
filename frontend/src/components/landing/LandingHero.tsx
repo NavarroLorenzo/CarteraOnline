@@ -21,7 +21,7 @@ export function LandingHero() {
             Ordená tu dinero, entendé tus movimientos y tomá mejores decisiones.
           </motion.h1>
           <motion.p variants={fadeUp}>
-            Cartera Online te ayuda a registrar cuentas, ingresos, gastos y transferencias con una experiencia simple, prolija y pensada para uso diario.
+            Cenz te ayuda a registrar cuentas, ingresos, gastos y transferencias con una experiencia simple, prolija y pensada para uso diario.
           </motion.p>
 
           <motion.div className="landing-hero__actions" variants={fadeUp}>

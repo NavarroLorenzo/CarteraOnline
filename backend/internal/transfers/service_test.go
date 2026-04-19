@@ -3,7 +3,7 @@ package transfers
 import (
 	"testing"
 
-	"cartera-app/backend/internal/accounts"
+	"cenz/backend/internal/accounts"
 )
 
 type fakeTransferAccountProvider struct {

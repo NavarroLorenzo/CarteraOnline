@@ -18,10 +18,10 @@ export function LandingHeader() {
       variants={fadeUp}
       transition={delayedTransition(0.05)}
     >
-      <Link to="/" className="landing-brand" aria-label="Cartera Online">
-        <span className="landing-brand__mark">CO</span>
+      <Link to="/" className="landing-brand" aria-label="Cenz">
+        <span className="landing-brand__mark">C</span>
         <span className="landing-brand__copy">
-          <strong>Cartera Online</strong>
+          <strong>Cenz</strong>
           <small>Finanzas personales sin fricción</small>
         </span>
       </Link>

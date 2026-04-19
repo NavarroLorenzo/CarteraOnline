@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"cartera-app/backend/internal/shared/httpjson"
+	"cenz/backend/internal/shared/httpjson"
 
 	"github.com/gin-gonic/gin"
 )

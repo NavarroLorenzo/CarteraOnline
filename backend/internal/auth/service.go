@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"cartera-app/backend/internal/shared/normalize"
+	"cenz/backend/internal/shared/normalize"
 
 	"golang.org/x/crypto/bcrypt"
 )

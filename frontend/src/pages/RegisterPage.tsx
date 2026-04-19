@@ -62,9 +62,9 @@ export function RegisterPage() {
     <StaggerGroup className="auth-shell" onView={false}>
       <motion.section className="auth-panel auth-panel--hero auth-panel--hero-alt" variants={fadeLeft}>
         <motion.span className="eyebrow" variants={fadeUp}>
-          Primer paso
+          Cenz
         </motion.span>
-        <motion.h1 variants={fadeUp}>Creá tu usuario y empezá a ordenar tus finanzas.</motion.h1>
+        <motion.h1 variants={fadeUp}>Creá tu usuario en Cenz y empezá a ordenar tus finanzas.</motion.h1>
         <motion.p variants={fadeUp}>
           Después vas a poder cargar cuentas, registrar ingresos y gastos, y mover saldo entre tus cuentas.
         </motion.p>

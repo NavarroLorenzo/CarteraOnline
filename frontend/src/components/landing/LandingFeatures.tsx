@@ -29,7 +29,7 @@ export function LandingFeatures() {
     <section id="funcionalidades" className="landing-section">
       <Reveal className="landing-section__intro">
         <span className="eyebrow">Qué podés hacer</span>
-        <h2>Una base sólida para llevar tus finanzas sin planillas dispersas</h2>
+        <h2>Cenz te da una base sólida para llevar tus finanzas sin planillas dispersas</h2>
         <p>
           Todo está pensado para que puedas entender tu dinero con claridad y tomar decisiones más rápido.
         </p>

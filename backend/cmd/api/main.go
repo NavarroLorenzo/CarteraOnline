@@ -3,9 +3,9 @@ package main
 import (
 	"log"
 
-	"cartera-app/backend/internal/config"
-	"cartera-app/backend/internal/database"
-	"cartera-app/backend/internal/routes"
+	"cenz/backend/internal/config"
+	"cenz/backend/internal/database"
+	"cenz/backend/internal/routes"
 )
 
 func main() {

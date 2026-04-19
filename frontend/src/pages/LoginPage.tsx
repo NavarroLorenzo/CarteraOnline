@@ -63,9 +63,9 @@ export function LoginPage() {
     <StaggerGroup className="auth-shell" onView={false}>
       <motion.section className="auth-panel auth-panel--hero" variants={fadeLeft}>
         <motion.span className="eyebrow" variants={fadeUp}>
-          Finanzas en orden
+          Cenz
         </motion.span>
-        <motion.h1 variants={fadeUp}>Entrá y retomá el control de tu dinero.</motion.h1>
+        <motion.h1 variants={fadeUp}>Entrá a Cenz y retomá el control de tu dinero.</motion.h1>
         <motion.p variants={fadeUp}>
           Accedé a tus cuentas, movimientos y transferencias desde un solo lugar, con tu sesión protegida.
         </motion.p>

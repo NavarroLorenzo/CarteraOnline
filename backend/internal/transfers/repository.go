@@ -1,7 +1,7 @@
 package transfers
 
 import (
-	"cartera-app/backend/internal/transactions"
+	"cenz/backend/internal/transactions"
 	"context"
 
 	"github.com/jackc/pgx/v5/pgxpool"

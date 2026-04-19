@@ -1,12 +1,12 @@
 package routes
 
 import (
-	"cartera-app/backend/internal/accounts"
-	"cartera-app/backend/internal/auth"
-	"cartera-app/backend/internal/config"
-	"cartera-app/backend/internal/shared/httpmiddleware"
-	"cartera-app/backend/internal/transactions"
-	"cartera-app/backend/internal/transfers"
+	"cenz/backend/internal/accounts"
+	"cenz/backend/internal/auth"
+	"cenz/backend/internal/config"
+	"cenz/backend/internal/shared/httpmiddleware"
+	"cenz/backend/internal/transactions"
+	"cenz/backend/internal/transfers"
 	"log"
 	"time"
 
@@ -24,7 +24,7 @@ func SetupRouter(db *pgxpool.Pool, cfg *config.Config) *gin.Engine {
 	api := router.Group("/api")
 	{
 		authRepo := auth.NewPostgresRepository(db)
-		tokenManager := auth.NewTokenManager(cfg.JWTSecret, "cartera-app", 24*time.Hour)
+		tokenManager := auth.NewTokenManager(cfg.JWTSecret, "cenz", 24*time.Hour)
 		authService := auth.NewService(authRepo, tokenManager)
 		authHandler := auth.NewHandler(authService)
 

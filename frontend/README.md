@@ -1,6 +1,6 @@
 # Frontend
 
-Frontend React + Vite + TypeScript para consumir el backend de `CarteraOnline`.
+Frontend React + Vite + TypeScript para consumir el backend de Cenz.
 
 ## Requisitos
 
@@ -40,14 +40,14 @@ VITE_API_BASE_URL=https://api.tudominio.com/api
 En una terminal levantá el backend:
 
 ```bash
-cd /home/lorenzonavarro/Documents/Pruebas/CarteraOnline/backend
+cd ./backend
 go run ./cmd/api/main.go
 ```
 
 En otra terminal levantá el frontend:
 
 ```bash
-cd /home/lorenzonavarro/Documents/Pruebas/CarteraOnline/frontend
+cd ./frontend
 npm install
 npm run dev
 ```

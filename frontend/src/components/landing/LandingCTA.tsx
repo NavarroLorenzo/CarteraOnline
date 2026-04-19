@@ -7,9 +7,9 @@ export function LandingCTA() {
     <Reveal id="cta-final" className="landing-cta" variants={fadeUp}>
       <div>
         <span className="eyebrow">Listo para empezar</span>
-        <h2>Entrá a tu espacio y empezá a ver tus finanzas con más claridad.</h2>
+        <h2>Entrá a Cenz y empezá a ver tus finanzas con más claridad.</h2>
         <p>
-          La app ya está preparada para que cargues tus cuentas, registres movimientos y sigas cada transferencia desde el primer día.
+          Cenz ya está preparado para que cargues tus cuentas, registres movimientos y sigas cada transferencia desde el primer día.
         </p>
       </div>
 

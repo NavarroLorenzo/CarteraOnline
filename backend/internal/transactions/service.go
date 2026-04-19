@@ -1,8 +1,8 @@
 package transactions
 
 import (
-	"cartera-app/backend/internal/accounts"
-	"cartera-app/backend/internal/shared/normalize"
+	"cenz/backend/internal/accounts"
+	"cenz/backend/internal/shared/normalize"
 	"errors"
 	"strings"
 )

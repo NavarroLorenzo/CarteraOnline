@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"cartera-app/backend/internal/accounts"
+	"cenz/backend/internal/accounts"
 )
 
 type fakeTransactionsRepo struct {

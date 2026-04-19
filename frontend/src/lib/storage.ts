@@ -1,6 +1,6 @@
 import type { User } from "../types/api";
 
-const AUTH_STORAGE_KEY = "cartera-online.auth";
+const AUTH_STORAGE_KEY = "cenz.auth";
 
 export type StoredAuth = {
   token: string;

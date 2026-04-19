@@ -24,10 +24,10 @@ export function Sidebar({ username, email, onNavigate }: SidebarProps) {
       variants={staggerContainer}
     >
       <motion.div className="sidebar__brand" variants={fadeLeft}>
-        <div className="sidebar__brand-mark">CO</div>
+        <div className="sidebar__brand-mark">C</div>
         <div>
           <p className="sidebar__eyebrow">Finanzas personales</p>
-          <h1>Cartera Online</h1>
+          <h1>Cenz</h1>
         </div>
       </motion.div>
 

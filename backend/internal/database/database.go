@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"cartera-app/backend/internal/config"
+	"cenz/backend/internal/config"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )

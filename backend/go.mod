@@ -1,4 +1,4 @@
-module cartera-app/backend
+module cenz/backend
 
 go 1.26
 

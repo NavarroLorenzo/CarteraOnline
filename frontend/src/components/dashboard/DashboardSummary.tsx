@@ -20,7 +20,7 @@ type DashboardSummaryProps = {
 const statItems = [
   { key: "income", label: "Ingresos", tone: "positive" },
   { key: "expense", label: "Gastos", tone: "negative" },
-  { key: "balance", label: "Balance / ahorro", tone: "accent" },
+  { key: "balance", label: "Balance", tone: "accent" },
 ] as const;
 
 export function DashboardSummary({ preset, range, summary, loading }: DashboardSummaryProps) {

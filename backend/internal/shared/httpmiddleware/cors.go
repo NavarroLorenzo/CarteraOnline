@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"cartera-app/backend/internal/config"
+	"cenz/backend/internal/config"
 
 	"github.com/gin-gonic/gin"
 )

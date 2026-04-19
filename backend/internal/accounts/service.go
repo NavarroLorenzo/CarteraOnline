@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"cartera-app/backend/internal/shared/normalize"
+	"cenz/backend/internal/shared/normalize"
 )
 
 var ErrAccountNotFound = errors.New("la cuenta no existe")
