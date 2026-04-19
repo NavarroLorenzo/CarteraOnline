@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/url"
 	"strings"
 	"time"
 
@@ -33,6 +34,8 @@ func NewPool(cfg *config.Config) *pgxpool.Pool {
 		log.Fatal("No se pudo hacer ping a PostgreSQL: ", err)
 	}
 
+	logConnectedDatabase(ctx, pool)
+
 	if err := ensureSchema(pool); err != nil {
 		log.Fatal("No se pudo preparar el esquema de la base de datos: ", err)
 	}
@@ -43,7 +46,7 @@ func NewPool(cfg *config.Config) *pgxpool.Pool {
 
 func buildDSN(cfg *config.Config) (string, string) {
 	if databaseURL := strings.TrimSpace(cfg.DatabaseURL); databaseURL != "" {
-		return databaseURL, "DATABASE_URL"
+		return ensureSSLMode(databaseURL, "require"), "DATABASE_URL"
 	}
 
 	dsn := fmt.Sprintf(
@@ -57,6 +60,67 @@ func buildDSN(cfg *config.Config) (string, string) {
 	)
 
 	return dsn, "variables DB_HOST/DB_PORT/DB_USER/DB_PASSWORD/DB_NAME/DB_SSLMODE"
+}
+
+func ensureSSLMode(connStr, sslMode string) string {
+	trimmed := strings.TrimSpace(connStr)
+	if trimmed == "" {
+		return trimmed
+	}
+
+	if strings.Contains(trimmed, "://") {
+		parsedURL, err := url.Parse(trimmed)
+		if err != nil {
+			return appendSSLModeQueryParam(trimmed, sslMode)
+		}
+
+		query := parsedURL.Query()
+		if query.Has("sslmode") {
+			return trimmed
+		}
+
+		query.Set("sslmode", sslMode)
+		parsedURL.RawQuery = query.Encode()
+		return parsedURL.String()
+	}
+
+	if keywordDSNHasSSLMode(trimmed) {
+		return trimmed
+	}
+
+	return trimmed + " sslmode=" + sslMode
+}
+
+func appendSSLModeQueryParam(connStr, sslMode string) string {
+	separator := "?"
+	if strings.Contains(connStr, "?") {
+		separator = "&"
+	}
+
+	return connStr + separator + "sslmode=" + sslMode
+}
+
+func keywordDSNHasSSLMode(connStr string) bool {
+	for _, field := range strings.Fields(connStr) {
+		if strings.HasPrefix(strings.ToLower(field), "sslmode=") {
+			return true
+		}
+	}
+
+	return false
+}
+
+func logConnectedDatabase(ctx context.Context, pool *pgxpool.Pool) {
+	var dbName string
+	var dbUser string
+
+	err := pool.QueryRow(ctx, `SELECT current_database(), current_user`).Scan(&dbName, &dbUser)
+	if err != nil {
+		log.Printf("No se pudo obtener detalle de la DB conectada: %v", err)
+		return
+	}
+
+	log.Printf("Connected to DB: %s User: %s", dbName, dbUser)
 }
 
 func ensureSchema(pool *pgxpool.Pool) error {
