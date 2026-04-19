@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import type { DashboardTrendPoint } from "../../types/api";
-import { IncomeExpenseBarChart } from "./IncomeExpenseBarChart";
+import { IncomeExpenseAreaChart } from "./IncomeExpenseAreaChart";
 import { EmptyState } from "../ui/EmptyState";
 import { fadeLeft } from "../ui/animation";
 
@@ -23,7 +23,7 @@ export function DashboardIncomeVsExpenses({ points, loading }: DashboardIncomeVs
       {loading ? (
         <p className="feedback">Cargando información...</p>
       ) : points.length > 0 ? (
-        <IncomeExpenseBarChart points={points} />
+        <IncomeExpenseAreaChart points={points} />
       ) : (
         <EmptyState
           title="No hay tendencia disponible"

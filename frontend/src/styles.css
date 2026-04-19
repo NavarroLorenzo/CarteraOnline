@@ -1500,107 +1500,318 @@ textarea {
   background: var(--negative-soft);
 }
 
-.bar-chart {
+.area-chart {
   display: grid;
   grid-template-rows: auto 1fr;
   gap: 0.9rem;
   height: 100%;
 }
 
-.bar-chart__legend {
+.area-chart__legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.95rem;
+  align-items: center;
 }
 
-.bar-chart__legend-item {
+.area-chart__legend-item {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--ink-soft);
   font-size: 0.92rem;
+  font-weight: 700;
+  transition:
+    color 160ms ease,
+    opacity 160ms ease,
+    transform 160ms ease;
 }
 
-.bar-chart__legend-swatch {
-  width: 0.7rem;
-  height: 0.7rem;
+.area-chart__legend-item:hover,
+.area-chart__legend-item:focus-visible {
+  color: var(--ink);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.area-chart__legend-swatch {
+  width: 0.62rem;
+  height: 0.62rem;
   border-radius: 999px;
+  box-shadow: 0 0 0 4px rgba(16, 33, 29, 0.04);
 }
 
-.bar-chart__legend-swatch--income {
-  background: var(--positive);
+.area-chart__legend-swatch--income {
+  background: linear-gradient(135deg, #1b9a68, var(--positive));
 }
 
-.bar-chart__legend-swatch--expense {
-  background: var(--accent);
+.area-chart__legend-swatch--expense {
+  background: linear-gradient(135deg, #e45a3b, var(--negative));
 }
 
-.bar-chart__canvas {
+.area-chart__canvas {
   position: relative;
   min-height: 16rem;
-  padding: 0.7rem 0.45rem 0.25rem;
+  padding: 0.65rem 0.35rem 0.15rem;
   border-radius: var(--radius-lg);
-  border: 1px solid rgba(16, 33, 29, 0.08);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 250, 244, 0.7));
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 250, 244, 0.48));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    inset 0 -1px 0 rgba(16, 33, 29, 0.04);
+  isolation: isolate;
   overflow: hidden;
 }
 
-.bar-chart__svg {
+.area-chart__svg {
   width: 100%;
-  height: clamp(15rem, 27vw, 17rem);
+  height: clamp(15.5rem, 27vw, 17.4rem);
   overflow: visible;
   display: block;
 }
 
-.bar-chart__grid {
-  stroke: rgba(16, 33, 29, 0.1);
-  stroke-dasharray: 5 7;
+.area-chart__grid {
+  stroke: rgba(16, 33, 29, 0.07);
+  stroke-dasharray: 3 9;
 }
 
-.bar-chart__axis-label,
-.bar-chart__x-label {
+.area-chart__axis-label,
+.area-chart__x-label {
   fill: var(--ink-soft);
   font-size: 12px;
   font-family: "Instrument Sans", "Segoe UI", sans-serif;
+  font-weight: 650;
 }
 
-.bar-chart__bar {
+.area-chart__axis-label {
+  opacity: 0.72;
+}
+
+.area-chart__x-label {
+  opacity: 0.84;
+}
+
+.area-chart__area {
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.area-chart__area--income {
+  fill: url("#income-area-gradient");
+}
+
+.area-chart__area--expense {
+  fill: url("#expense-area-gradient");
+}
+
+.area-chart__line {
+  fill: none;
+  stroke-width: 3.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+  filter: drop-shadow(0 8px 12px rgba(16, 33, 29, 0.08));
+  transition:
+    opacity 180ms ease,
+    stroke-width 180ms ease,
+    filter 180ms ease;
+}
+
+.area-chart__line-glow {
+  fill: none;
+  stroke-width: 9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.11;
+  pointer-events: none;
+  filter: blur(0.2px);
+  transition: opacity 180ms ease;
+}
+
+.area-chart__line-glow--income {
+  stroke: var(--positive);
+}
+
+.area-chart__line-glow--expense {
+  stroke: var(--negative);
+}
+
+.area-chart__line--income {
+  stroke: var(--positive);
+}
+
+.area-chart__line--expense {
+  stroke: var(--negative);
+}
+
+.area-chart--focus-income .area-chart__line--expense,
+.area-chart--focus-income .area-chart__area--expense,
+.area-chart--focus-expense .area-chart__line--income,
+.area-chart--focus-expense .area-chart__area--income {
+  opacity: 0.34;
+}
+
+.area-chart--focus-income .area-chart__line-glow--expense,
+.area-chart--focus-expense .area-chart__line-glow--income {
+  opacity: 0.04;
+}
+
+.area-chart--focus-income .area-chart__line--income,
+.area-chart--focus-expense .area-chart__line--expense {
+  stroke-width: 4.2;
+  filter: drop-shadow(0 10px 16px rgba(16, 33, 29, 0.12));
+}
+
+.area-chart--focus-income .area-chart__line-glow--income,
+.area-chart--focus-expense .area-chart__line-glow--expense {
+  opacity: 0.16;
+}
+
+.area-chart--loss-hover .area-chart__line--expense {
+  stroke-width: 4.2;
+  filter: drop-shadow(0 10px 16px rgba(202, 61, 34, 0.14));
+}
+
+.area-chart--loss-hover .area-chart__line-glow--expense {
+  opacity: 0.18;
+}
+
+.area-chart__hover-zone {
   cursor: pointer;
-  transition: filter 180ms ease;
 }
 
-.bar-chart__bar:hover {
-  filter: brightness(1.06);
+.area-chart__hover-band {
+  fill: url("#hover-band-gradient");
+  transition: fill 160ms ease;
 }
 
-.bar-chart__bar--income {
+.area-chart--loss-hover .area-chart__hover-band {
+  fill: url("#loss-hover-band-gradient");
+}
+
+.area-chart__hover-line {
+  stroke: rgba(16, 33, 29, 0.14);
+  stroke-width: 1.2;
+  stroke-dasharray: 4 8;
+}
+
+.area-chart--loss-hover .area-chart__hover-line {
+  stroke: rgba(202, 61, 34, 0.28);
+}
+
+.area-chart__point {
+  stroke: #fffdf9;
+  stroke-width: 2.8;
+  filter: drop-shadow(0 8px 14px rgba(16, 33, 29, 0.18));
+}
+
+.area-chart__point--income {
   fill: var(--positive);
 }
 
-.bar-chart__bar--expense {
-  fill: var(--accent);
+.area-chart__point--expense {
+  fill: var(--negative);
 }
 
-.bar-chart__tooltip,
+.area-chart__tooltip,
 .pie-chart__tooltip {
   position: absolute;
   z-index: 2;
   display: grid;
-  gap: 0.18rem;
-  min-width: 9rem;
-  padding: 0.72rem 0.82rem;
+  gap: 0.34rem;
+  min-width: 11.5rem;
+  padding: 0.82rem 0.9rem;
   border-radius: 0.95rem;
-  border: 1px solid rgba(16, 33, 29, 0.08);
-  background: rgba(15, 23, 22, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 22, 0.92);
   color: #fff7f2;
   box-shadow: 0 18px 38px rgba(15, 23, 22, 0.22);
   pointer-events: none;
   transform: translate(-50%, calc(-100% - 12px));
+  backdrop-filter: blur(12px);
 }
 
-.bar-chart__tooltip span,
+.area-chart__tooltip {
+  animation: area-tooltip-in 150ms ease-out;
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.area-chart__tooltip--left {
+  transform: translate(-14%, calc(-100% - 12px));
+}
+
+.area-chart__tooltip--right {
+  transform: translate(-86%, calc(-100% - 12px));
+}
+
+.area-chart__tooltip span,
 .pie-chart__tooltip span {
   color: rgba(255, 247, 242, 0.86);
+}
+
+.area-chart__tooltip strong {
+  margin-bottom: 0.08rem;
+  font-size: 0.88rem;
+}
+
+.area-chart__tooltip-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+}
+
+.area-chart__tooltip-row i {
+  width: 0.52rem;
+  height: 0.52rem;
+  border-radius: 999px;
+}
+
+.area-chart__tooltip-row b {
+  color: #fff7f2;
+  font-weight: 800;
+}
+
+.area-chart__tooltip-row--income i {
+  background: var(--positive);
+}
+
+.area-chart__tooltip-row--expense i {
+  background: var(--negative);
+}
+
+.area-chart__tooltip-row--balance i {
+  background: rgba(255, 247, 242, 0.58);
+}
+
+.area-chart__tooltip-row--balance {
+  margin-top: 0.08rem;
+  padding-top: 0.42rem;
+  border-top: 1px solid rgba(255, 247, 242, 0.1);
+}
+
+.area-chart__tooltip-row--loss b {
+  color: #ffb9a7;
+}
+
+.area-chart__tooltip-row--loss i {
+  background: var(--negative);
+}
+
+@keyframes area-tooltip-in {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
 }
 
 .chart-empty {
