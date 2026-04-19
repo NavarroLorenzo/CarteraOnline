@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { NavLink } from "react-router-dom";
+import { BrandLogo } from "../ui/BrandLogo";
 import { fadeLeft, fadeUp, staggerContainer } from "../ui/animation";
 
 const navItems = [
@@ -24,11 +25,7 @@ export function Sidebar({ username, email, onNavigate }: SidebarProps) {
       variants={staggerContainer}
     >
       <motion.div className="sidebar__brand" variants={fadeLeft}>
-        <div className="sidebar__brand-mark">C</div>
-        <div>
-          <p className="sidebar__eyebrow">Finanzas personales</p>
-          <h1>Cenz</h1>
-        </div>
+        <BrandLogo variant="full" className="sidebar__brand-logo" />
       </motion.div>
 
       <motion.nav className="sidebar__nav" variants={fadeUp}>

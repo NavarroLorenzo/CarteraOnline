@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
+import { BrandLogo } from "../components/ui/BrandLogo";
 import {
   PresenceMessage,
   StaggerGroup,
@@ -62,9 +63,9 @@ export function LoginPage() {
   return (
     <StaggerGroup className="auth-shell" onView={false}>
       <motion.section className="auth-panel auth-panel--hero" variants={fadeLeft}>
-        <motion.span className="eyebrow" variants={fadeUp}>
-          Cenz
-        </motion.span>
+        <motion.div className="auth-brand" variants={fadeUp}>
+          <BrandLogo variant="full" />
+        </motion.div>
         <motion.h1 variants={fadeUp}>Entrá a Cenz y retomá el control de tu dinero.</motion.h1>
         <motion.p variants={fadeUp}>
           Accedé a tus cuentas, movimientos y transferencias desde un solo lugar, con tu sesión protegida.

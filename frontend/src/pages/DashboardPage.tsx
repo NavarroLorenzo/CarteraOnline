@@ -9,6 +9,7 @@ import { DashboardPeriodSelector } from "../components/dashboard/DashboardPeriod
 import { DashboardRecentTransactions } from "../components/dashboard/DashboardRecentTransactions";
 import { DashboardSummary } from "../components/dashboard/DashboardSummary";
 import { DashboardTopExpenses } from "../components/dashboard/DashboardTopExpenses";
+import { BrandLogo } from "../components/ui/BrandLogo";
 import { MetricCard } from "../components/ui/MetricCard";
 import { PresenceMessage, Reveal, StaggerGroup } from "../components/ui/animation";
 import {
@@ -197,6 +198,9 @@ export function DashboardPage() {
   return (
     <div className="page-stack">
       <Reveal onView={false}>
+        <div className="dashboard-brand-strip" aria-label="Cenz">
+          <BrandLogo variant="full" />
+        </div>
       </Reveal>
 
       <Reveal onView={false}>

@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { BrandLogo } from "../ui/BrandLogo";
 import { buttonHover, delayedTransition, fadeUp } from "./motion";
 import { scrollToSection } from "./scroll";
 
@@ -19,11 +20,8 @@ export function LandingHeader() {
       transition={delayedTransition(0.05)}
     >
       <Link to="/" className="landing-brand" aria-label="Cenz">
-        <span className="landing-brand__mark">C</span>
-        <span className="landing-brand__copy">
-          <strong>Cenz</strong>
-          <small>Finanzas personales sin fricción</small>
-        </span>
+        <BrandLogo variant="responsive" />
+        <small>Finanzas personales sin fricción</small>
       </Link>
 
       <nav className="landing-nav__links" aria-label="Navegación principal">

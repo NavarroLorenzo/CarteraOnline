@@ -3,3 +3,6 @@ backend/.env
 frontend/.env
 frontend/.env.local
 assets/
+!frontend/src/assets/
+!frontend/src/assets/cenz_logo_solo.png
+!frontend/src/assets/cenz_logo_entero.png

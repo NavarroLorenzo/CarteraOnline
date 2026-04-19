@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
+import { BrandLogo } from "../components/ui/BrandLogo";
 import {
   PresenceMessage,
   StaggerGroup,
@@ -61,9 +62,9 @@ export function RegisterPage() {
   return (
     <StaggerGroup className="auth-shell" onView={false}>
       <motion.section className="auth-panel auth-panel--hero auth-panel--hero-alt" variants={fadeLeft}>
-        <motion.span className="eyebrow" variants={fadeUp}>
-          Cenz
-        </motion.span>
+        <motion.div className="auth-brand" variants={fadeUp}>
+          <BrandLogo variant="full" />
+        </motion.div>
         <motion.h1 variants={fadeUp}>Creá tu usuario en Cenz y empezá a ordenar tus finanzas.</motion.h1>
         <motion.p variants={fadeUp}>
           Después vas a poder cargar cuentas, registrar ingresos y gastos, y mover saldo entre tus cuentas.
