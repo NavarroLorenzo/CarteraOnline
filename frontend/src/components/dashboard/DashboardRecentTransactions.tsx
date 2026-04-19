@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { formatCurrency, formatDate, formatTypeLabel } from "../../lib/format";
+import { formatCurrency, formatDateTime, formatTypeLabel } from "../../lib/format";
 import type { DashboardTransactionItem } from "../../types/api";
 import { EmptyState } from "../ui/EmptyState";
 import { Reveal, StaggerGroup, cardHover, fadeUp } from "../ui/animation";
@@ -57,7 +57,7 @@ export function DashboardRecentTransactions({ transactions, loading }: Dashboard
 
                 <div className="list-row__meta">
                   <strong>{formatCurrency(transaction.amount)}</strong>
-                  <span>{formatDate(transaction.created_at)}</span>
+                  <span className="list-row__date">{formatDateTime(transaction.created_at)}</span>
                 </div>
               </motion.div>
             ))}

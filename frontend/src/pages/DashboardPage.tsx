@@ -139,7 +139,7 @@ export function DashboardPage() {
     setCategoryDetail(null);
   };
 
-  const handleClearFilters = () => {
+  const resetDashboardPeriod = () => {
     const resetRange = {
       date_from: todayString,
       date_to: todayString,
@@ -153,6 +153,32 @@ export function DashboardPage() {
     });
     setSelectedCategoryKey(null);
     setCategoryDetail(null);
+  };
+
+  const handleCustomRangeChange = (nextRange: DashboardDateRange) => {
+    setCustomRangeDraft(nextRange);
+
+    if (!nextRange.date_from && !nextRange.date_to) {
+      resetDashboardPeriod();
+      setError(null);
+      return;
+    }
+
+    if (!isDashboardCustomRangeValid(nextRange)) {
+      return;
+    }
+
+    setActivePeriod({
+      preset: "custom",
+      customRange: nextRange,
+    });
+    setSelectorPreset("custom");
+    setSelectedCategoryKey(null);
+    setCategoryDetail(null);
+  };
+
+  const handleClearFilters = () => {
+    resetDashboardPeriod();
     setError(null);
   };
 
@@ -182,7 +208,7 @@ export function DashboardPage() {
           customRangeValid={customRangeValid}
           validationMessage={customRangeValidationMessage}
           onPresetChange={handlePresetChange}
-          onCustomRangeChange={setCustomRangeDraft}
+          onCustomRangeChange={handleCustomRangeChange}
           onApplyCustomRange={handleApplyCustomRange}
           onClearFilters={handleClearFilters}
         />

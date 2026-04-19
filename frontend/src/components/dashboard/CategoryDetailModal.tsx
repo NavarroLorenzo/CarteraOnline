@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import type { DashboardCategoryDetail, DashboardCategorySummary } from "../../types/api";
-import { formatCurrency, formatDate, formatTypeLabel } from "../../lib/format";
+import { formatCurrency, formatDateTime, formatTypeLabel } from "../../lib/format";
 import { CategoryPieChart } from "./CategoryPieChart";
 
 type CategoryDetailModalProps = {
@@ -104,7 +104,7 @@ export function CategoryDetailModal({
 
                         <div className="list-row__meta">
                           <strong>{formatCurrency(transaction.amount)}</strong>
-                          <span>{formatDate(transaction.created_at)}</span>
+                          <span className="list-row__date">{formatDateTime(transaction.created_at)}</span>
                         </div>
                       </div>
                     ))

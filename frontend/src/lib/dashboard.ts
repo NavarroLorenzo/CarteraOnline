@@ -1,3 +1,5 @@
+import { formatDate } from "./format";
+
 export type DashboardFilterPreset = "day" | "week" | "month" | "year" | "custom";
 
 export type DashboardDateRange = {
@@ -12,17 +14,6 @@ export type DashboardActivePeriod = {
 
 const monthFormatter = new Intl.DateTimeFormat("es-AR", {
   month: "long",
-  year: "numeric",
-});
-
-const shortDayFormatter = new Intl.DateTimeFormat("es-AR", {
-  day: "numeric",
-  month: "short",
-});
-
-const fullDayFormatter = new Intl.DateTimeFormat("es-AR", {
-  day: "numeric",
-  month: "short",
   year: "numeric",
 });
 
@@ -122,7 +113,7 @@ export function parseInputDate(value: string): Date {
 }
 
 export function formatDaySummaryLabel(value: string): string {
-  return shortDayFormatter.format(parseInputDate(value));
+  return formatDate(parseInputDate(value));
 }
 
 export function formatMonthSummaryLabel(value: string): string {
@@ -140,13 +131,11 @@ export function formatDashboardRangeLabel(
   }
 
   if (preset === "day") {
-    return fullDayFormatter.format(parseInputDate(range.date_to));
+    return formatDate(range.date_to);
   }
 
   if (preset === "week") {
-    return `${shortDayFormatter.format(parseInputDate(range.date_from))} - ${fullDayFormatter.format(
-      parseInputDate(range.date_to),
-    )}`;
+    return `${formatDate(range.date_from)} - ${formatDate(range.date_to)}`;
   }
 
   if (preset === "month") {
@@ -158,12 +147,10 @@ export function formatDashboardRangeLabel(
   }
 
   if (range.date_from === range.date_to) {
-    return fullDayFormatter.format(parseInputDate(range.date_from));
+    return formatDate(range.date_from);
   }
 
-  return `${shortDayFormatter.format(parseInputDate(range.date_from))} - ${fullDayFormatter.format(
-    parseInputDate(range.date_to),
-  )}`;
+  return `${formatDate(range.date_from)} - ${formatDate(range.date_to)}`;
 }
 
 export function getDashboardSummaryTitle(preset: DashboardFilterPreset): string {

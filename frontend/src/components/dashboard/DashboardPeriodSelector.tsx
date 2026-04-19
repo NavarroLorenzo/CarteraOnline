@@ -4,6 +4,7 @@ import {
   type DashboardDateRange,
   type DashboardFilterPreset,
 } from "../../lib/dashboard";
+import { DateRangePicker } from "../ui/DateRangePicker";
 import { buttonHover, fadeUp } from "../ui/animation";
 
 type DashboardPeriodSelectorProps = {
@@ -70,33 +71,17 @@ export function DashboardPeriodSelector({
 
       {preset === "custom" ? (
         <div className="dashboard-period-selector__custom">
-          <label className="field">
-            <span>Fecha desde</span>
-            <input
-              type="date"
-              value={customRange.date_from}
-              onChange={(event) =>
-                onCustomRangeChange({
-                  ...customRange,
-                  date_from: event.target.value,
-                })
-              }
-            />
-          </label>
-
-          <label className="field">
-            <span>Fecha hasta</span>
-            <input
-              type="date"
-              value={customRange.date_to}
-              onChange={(event) =>
-                onCustomRangeChange({
-                  ...customRange,
-                  date_to: event.target.value,
-                })
-              }
-            />
-          </label>
+          <DateRangePicker
+            className="date-range-picker--wide"
+            value={{ from: customRange.date_from, to: customRange.date_to }}
+            onChange={(nextRange) =>
+              onCustomRangeChange({
+                date_from: nextRange.from,
+                date_to: nextRange.to,
+              })
+            }
+            disabled={loading}
+          />
 
           <div className="dashboard-period-selector__actions">
             <motion.button

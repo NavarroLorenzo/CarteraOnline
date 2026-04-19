@@ -5,6 +5,7 @@ import { ApiError } from "../api/client";
 import { transactionsApi, type TransactionFilters } from "../api/transactions";
 import { EmptyState } from "../components/ui/EmptyState";
 import { AnimatedSelect } from "../components/ui/AnimatedSelect";
+import { DateRangePicker } from "../components/ui/DateRangePicker";
 import { SelectionGrid } from "../components/ui/SelectionGrid";
 import {
   PresenceMessage,
@@ -19,7 +20,7 @@ import {
   formatAccountTypeLabel,
   formatCategoryKeyLabel,
   formatCurrency,
-  formatDate,
+  formatDateTime,
   formatTypeLabel,
 } from "../lib/format";
 import type { Account, Transaction, TransactionCategory, TransactionType } from "../types/api";
@@ -387,33 +388,17 @@ export function TransactionsPage() {
                 />
               </label>
 
-              <label className="field">
-                <span>Desde</span>
-                <input
-                  type="date"
-                  value={filters.date_from ?? ""}
-                  onChange={(event) =>
-                    setFilters((current) => ({
-                      ...current,
-                      date_from: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-
-              <label className="field">
-                <span>Hasta</span>
-                <input
-                  type="date"
-                  value={filters.date_to ?? ""}
-                  onChange={(event) =>
-                    setFilters((current) => ({
-                      ...current,
-                      date_to: event.target.value,
-                    }))
-                  }
-                />
-              </label>
+              <DateRangePicker
+                className="date-range-picker--wide"
+                value={{ from: filters.date_from ?? "", to: filters.date_to ?? "" }}
+                onChange={(nextRange) =>
+                  setFilters((current) => ({
+                    ...current,
+                    date_from: nextRange.from,
+                    date_to: nextRange.to,
+                  }))
+                }
+              />
             </div>
 
             <div className="action-row">
@@ -482,7 +467,7 @@ export function TransactionsPage() {
 
                       <div className="list-row__meta">
                         <strong>{formatCurrency(transaction.amount)}</strong>
-                        <span>{formatDate(transaction.created_at)}</span>
+                        <span className="list-row__date">{formatDateTime(transaction.created_at)}</span>
                         <button
                           type="button"
                           className="danger-link"

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { formatCurrency, formatDate } from "../../lib/format";
+import { formatCurrency, formatDateTime } from "../../lib/format";
 import type { DashboardTransactionItem } from "../../types/api";
 import { EmptyState } from "../ui/EmptyState";
 import { StaggerGroup, cardHover, fadeRight, fadeUp } from "../ui/animation";
@@ -44,7 +44,7 @@ export function DashboardTopExpenses({ transactions, loading }: DashboardTopExpe
 
               <div className="list-row__meta">
                 <strong>{formatCurrency(transaction.amount)}</strong>
-                <span>{formatDate(transaction.created_at)}</span>
+                <span className="list-row__date">{formatDateTime(transaction.created_at)}</span>
               </div>
             </motion.div>
           ))}

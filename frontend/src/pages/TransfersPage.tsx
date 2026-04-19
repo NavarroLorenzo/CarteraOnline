@@ -15,7 +15,7 @@ import {
   fadeRight,
   fadeUp,
 } from "../components/ui/animation";
-import { formatCurrency, formatDate } from "../lib/format";
+import { formatCurrency, formatDateTime } from "../lib/format";
 import type { Account, Transaction } from "../types/api";
 
 export function TransfersPage() {
@@ -236,7 +236,7 @@ export function TransfersPage() {
 
                     <div className="list-row__meta">
                       <strong>{formatCurrency(transaction.amount)}</strong>
-                      <span>{formatDate(transaction.created_at)}</span>
+                      <span className="list-row__date">{formatDateTime(transaction.created_at)}</span>
                     </div>
                   </motion.div>
                 ))}
