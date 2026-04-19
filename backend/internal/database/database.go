@@ -14,8 +14,17 @@ import (
 )
 
 func NewPool(cfg *config.Config) *pgxpool.Pool {
+	return newPool(cfg, true)
+}
+
+func NewPoolWithoutSchema(cfg *config.Config) *pgxpool.Pool {
+	return newPool(cfg, false)
+}
+
+func newPool(cfg *config.Config, prepareSchema bool) *pgxpool.Pool {
 	dsn, source := buildDSN(cfg)
 	log.Printf("Inicializando PostgreSQL usando %s", source)
+	log.Printf("PostgreSQL target diagnostics: %s", describeDSN(dsn))
 
 	poolConfig, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
@@ -36,8 +45,12 @@ func NewPool(cfg *config.Config) *pgxpool.Pool {
 
 	logConnectedDatabase(ctx, pool)
 
-	if err := ensureSchema(pool); err != nil {
-		log.Fatal("No se pudo preparar el esquema de la base de datos: ", err)
+	if prepareSchema {
+		if err := ensureSchema(pool); err != nil {
+			log.Fatal("No se pudo preparar el esquema de la base de datos: ", err)
+		}
+	} else {
+		log.Println("Preparación de esquema omitida para diagnóstico")
 	}
 
 	log.Println("Conexión a PostgreSQL OK")
@@ -113,14 +126,103 @@ func keywordDSNHasSSLMode(connStr string) bool {
 func logConnectedDatabase(ctx context.Context, pool *pgxpool.Pool) {
 	var dbName string
 	var dbUser string
+	var serverAddr *string
+	var serverPort *int
 
-	err := pool.QueryRow(ctx, `SELECT current_database(), current_user`).Scan(&dbName, &dbUser)
+	err := pool.QueryRow(
+		ctx,
+		`SELECT current_database(), current_user, inet_server_addr()::text, inet_server_port()`,
+	).Scan(&dbName, &dbUser, &serverAddr, &serverPort)
 	if err != nil {
 		log.Printf("No se pudo obtener detalle de la DB conectada: %v", err)
 		return
 	}
 
-	log.Printf("Connected to DB: %s User: %s", dbName, dbUser)
+	log.Printf(
+		"Connected to DB: %s User: %s ServerAddr: %s ServerPort: %s",
+		dbName,
+		dbUser,
+		stringOrUnknown(serverAddr),
+		intOrUnknown(serverPort),
+	)
+}
+
+func describeDSN(dsn string) string {
+	trimmed := strings.TrimSpace(dsn)
+	if strings.Contains(trimmed, "://") {
+		parsedURL, err := url.Parse(trimmed)
+		if err != nil {
+			return "format=url parse_error=true"
+		}
+
+		query := parsedURL.Query()
+		return fmt.Sprintf(
+			"format=url host=%s db=%s sslmode=%s user_present=%t password_present=%t",
+			parsedURL.Host,
+			strings.TrimPrefix(parsedURL.Path, "/"),
+			valueOrMissing(query.Get("sslmode")),
+			parsedURL.User != nil && parsedURL.User.Username() != "",
+			urlHasPassword(parsedURL),
+		)
+	}
+
+	fields := parseKeywordDSN(trimmed)
+	return fmt.Sprintf(
+		"format=keyword host=%s port=%s db=%s sslmode=%s user_present=%t password_present=%t",
+		valueOrMissing(fields["host"]),
+		valueOrMissing(fields["port"]),
+		valueOrMissing(fields["dbname"]),
+		valueOrMissing(fields["sslmode"]),
+		fields["user"] != "",
+		fields["password"] != "",
+	)
+}
+
+func parseKeywordDSN(dsn string) map[string]string {
+	fields := make(map[string]string)
+	for _, field := range strings.Fields(dsn) {
+		key, value, found := strings.Cut(field, "=")
+		if !found {
+			continue
+		}
+
+		fields[strings.ToLower(key)] = value
+	}
+
+	return fields
+}
+
+func urlHasPassword(parsedURL *url.URL) bool {
+	if parsedURL.User == nil {
+		return false
+	}
+
+	_, hasPassword := parsedURL.User.Password()
+	return hasPassword
+}
+
+func stringOrUnknown(value *string) string {
+	if value == nil || strings.TrimSpace(*value) == "" {
+		return "unknown"
+	}
+
+	return *value
+}
+
+func intOrUnknown(value *int) string {
+	if value == nil {
+		return "unknown"
+	}
+
+	return fmt.Sprint(*value)
+}
+
+func valueOrMissing(value string) string {
+	if strings.TrimSpace(value) == "" {
+		return "missing"
+	}
+
+	return value
 }
 
 func ensureSchema(pool *pgxpool.Pool) error {
