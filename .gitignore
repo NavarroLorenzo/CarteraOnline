@@ -3,3 +3,5 @@ backend/.env
 frontend/.env
 frontend/.env.local
 /assets/
+backend/cmd/seed/
+backend/cmd/seeds/
