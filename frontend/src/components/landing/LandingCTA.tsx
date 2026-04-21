@@ -9,7 +9,7 @@ export function LandingCTA() {
         <span className="eyebrow">Listo para empezar</span>
         <h2>Entrá a Cenz y empezá a ver tus finanzas con más claridad.</h2>
         <p>
-          Cenz ya está preparado para que cargues tus cuentas, registres movimientos y sigas cada transferencia desde el primer día.
+          Cenz ya está preparado para que cargues tu billetera, registres movimientos, sigas ahorros y guardes notas financieras desde el primer día.
         </p>
       </div>
 

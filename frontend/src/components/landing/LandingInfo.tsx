@@ -5,7 +5,7 @@ const points = [
   {
     title: "Menos fricción al registrar",
     description:
-      "Cargá ingresos, gastos y transferencias rápidamente, sin perder contexto entre cuentas y movimientos.",
+      "Cargá ingresos, gastos, transferencias y anotaciones rápidamente, sin perder contexto entre cuentas y movimientos.",
   },
   {
     title: "Mejor lectura del historial",
@@ -48,12 +48,12 @@ export function LandingInfo() {
           <span className="landing-story__eyebrow">Flujo recomendado</span>
           <ol className="landing-story__steps">
             <li>
-              <strong>1. Creá tus cuentas</strong>
-              <p>Separá los espacios donde realmente se mueve tu dinero.</p>
+              <strong>1. Creá tu billetera</strong>
+              <p>Separá efectivo, bancos, cuentas digitales y objetivos de ahorro.</p>
             </li>
             <li>
               <strong>2. Registrá la actividad</strong>
-              <p>Sumá ingresos, gastos y movimientos internos a medida que ocurren.</p>
+              <p>Sumá ingresos, gastos, movimientos internos y notas a medida que ocurren.</p>
             </li>
             <li>
               <strong>3. Revisá el panorama</strong>

@@ -10,12 +10,12 @@ const features = [
   {
     title: "Movimientos simples",
     description:
-      "Registrá ingresos y gastos con categoría, fecha y detalle para mantener tu historial limpio.",
+      "Registrá ingresos, gastos y notas con categoría, fecha y detalle para mantener tu historial limpio.",
   },
   {
-    title: "Transferencias consistentes",
+    title: "Ahorro con seguimiento",
     description:
-      "Mové saldo entre cuentas y mantené trazabilidad entre ambos movimientos relacionados.",
+      "Separá metas, revisá avances y entendé qué hábitos te acercan o alejan de ahorrar más.",
   },
   {
     title: "Panel listo para actuar",
@@ -31,7 +31,7 @@ export function LandingFeatures() {
         <span className="eyebrow">Qué podés hacer</span>
         <h2>Cenz te da una base sólida para llevar tus finanzas sin planillas dispersas</h2>
         <p>
-          Todo está pensado para que puedas entender tu dinero con claridad y tomar decisiones más rápido.
+          Todo está pensado para que puedas entender tu billetera, tus gastos y tus anotaciones con claridad.
         </p>
       </Reveal>
 
