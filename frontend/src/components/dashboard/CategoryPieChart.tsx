@@ -156,30 +156,32 @@ export function CategoryPieChart({
       </div>
 
       {showList ? (
-        <div className="pie-chart__list">
-          {chartData.map((slice) => (
-            <button
-              key={slice.category.key}
-              type="button"
-              className={`pie-chart__list-item ${
-                activeCategoryKey === slice.category.key ? "pie-chart__list-item--active" : ""
-              }`}
-              onClick={() => onCategorySelect?.(slice.category.key)}
-            >
-              <div className="pie-chart__list-meta">
-                <i className="pie-chart__swatch" style={{ backgroundColor: slice.color }} />
-                <div>
-                  <strong>{slice.category.label}</strong>
-                  <span>{slice.category.transactions_count} movimientos</span>
+        <div className="pie-chart__list-scroll scrollable-list" aria-label="Lista de categorías">
+          <div className="pie-chart__list">
+            {chartData.map((slice) => (
+              <button
+                key={slice.category.key}
+                type="button"
+                className={`pie-chart__list-item ${
+                  activeCategoryKey === slice.category.key ? "pie-chart__list-item--active" : ""
+                }`}
+                onClick={() => onCategorySelect?.(slice.category.key)}
+              >
+                <div className="pie-chart__list-meta">
+                  <i className="pie-chart__swatch" style={{ backgroundColor: slice.color }} />
+                  <div>
+                    <strong>{slice.category.label}</strong>
+                    <span>{slice.category.transactions_count} movimientos</span>
+                  </div>
                 </div>
-              </div>
 
-              <div className="pie-chart__list-values">
-                <strong>{formatCurrency(slice.category.amount)}</strong>
-                <span>{slice.category.percentage.toFixed(1)}%</span>
-              </div>
-            </button>
-          ))}
+                <div className="pie-chart__list-values">
+                  <strong>{formatCurrency(slice.category.amount)}</strong>
+                  <span>{slice.category.percentage.toFixed(1)}%</span>
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
       ) : null}
     </div>

@@ -2109,6 +2109,12 @@ textarea {
   gap: 0.75rem;
 }
 
+.pie-chart__list-scroll {
+  position: relative;
+  max-height: min(30rem, 60dvh);
+  min-height: 0;
+}
+
 .pie-chart__list-item {
   display: flex;
   justify-content: space-between;
@@ -2911,6 +2917,10 @@ textarea {
   .dashboard-modal__summary,
   .pie-chart {
     grid-template-columns: 1fr;
+  }
+
+  .pie-chart__list-scroll {
+    max-height: min(22rem, 45dvh);
   }
 
   .landing-hero__content,
