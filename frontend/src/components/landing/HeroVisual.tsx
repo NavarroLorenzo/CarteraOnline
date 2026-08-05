@@ -1,4 +1,3 @@
-import { useReducedMotion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const transactions = [
@@ -42,23 +41,32 @@ function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
 }
 
-function useTick(fps = 30) {
-  const prefersReducedMotion = useReducedMotion();
+function useTick(fps = 24) {
   const [tick, setTick] = useState(0);
-  const start = useRef(Date.now());
+  const frameRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (prefersReducedMotion) {
-      setTick(0);
-      return undefined;
-    }
+    const startedAt = window.performance.now();
+    const frameDuration = 1000 / fps;
+    let lastRenderedAt = startedAt - frameDuration;
 
-    const interval = window.setInterval(() => {
-      setTick((Date.now() - start.current) / 1000);
-    }, 1000 / fps);
+    const renderFrame = (now: number) => {
+      if (now - lastRenderedAt >= frameDuration) {
+        setTick((now - startedAt) / 1000);
+        lastRenderedAt = now;
+      }
 
-    return () => window.clearInterval(interval);
-  }, [fps, prefersReducedMotion]);
+      frameRef.current = window.requestAnimationFrame(renderFrame);
+    };
+
+    frameRef.current = window.requestAnimationFrame(renderFrame);
+
+    return () => {
+      if (frameRef.current !== null) {
+        window.cancelAnimationFrame(frameRef.current);
+      }
+    };
+  }, [fps]);
 
   return tick;
 }
@@ -157,7 +165,7 @@ function FlowLine({ x1, y1, x2, y2, tick, speed = 1, delay = 0 }: FlowLineProps)
 }
 
 export function HeroVisual() {
-  const tick = useTick(30);
+  const tick = useTick();
   const loop = 6;
   const phase = (tick % loop) / loop;
   const chartProgress = Math.min(phase * 2, 1);
@@ -296,9 +304,10 @@ export function HeroVisual() {
             className="finance-hero-mark"
             key={`${mark}-${index}`}
             style={{
-              left: startX + xWave,
-              top: yOffset,
+              left: startX,
+              top: 0,
               opacity,
+              transform: `translate3d(${xWave}px, ${yOffset}px, 0)`,
             }}
           >
             {mark}

@@ -800,6 +800,7 @@ textarea {
   border: 1px solid rgba(16, 33, 29, 0.09);
   box-shadow: 0 24px 54px rgba(52, 41, 20, 0.14);
   backdrop-filter: blur(18px);
+  will-change: transform;
 }
 
 .finance-hero-wallet {
@@ -1149,6 +1150,7 @@ textarea {
   font-weight: 700;
   pointer-events: none;
   user-select: none;
+  will-change: transform, opacity;
 }
 
 

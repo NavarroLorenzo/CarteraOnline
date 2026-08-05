@@ -1,0 +1,23 @@
+name: cenz-local
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: cenz-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cenz_dev
+      POSTGRES_USER: cenz
+      POSTGRES_PASSWORD: cenz_local_dev
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - cenz_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cenz -d cenz_dev"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  cenz_postgres_data:
