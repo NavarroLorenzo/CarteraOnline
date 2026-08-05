@@ -1,4 +1,5 @@
 INICIAR: .\scripts\start-local.cmd
+
 FRENAR: .\scripts\stop-local.cmd
 
 # Cenz
