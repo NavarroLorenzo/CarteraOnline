@@ -1,14 +1,20 @@
-INICIAR: .\scripts\start-local.cmd
-
-FRENAR: .\scripts\stop-local.cmd
-
 # Cenz
 
-Cenz es una aplicación web de finanzas personales. Permite organizar cuentas, registrar ingresos y gastos, transferir dinero entre cuentas propias y analizar la actividad mediante un dashboard.
+Cenz es una aplicación web para organizar finanzas personales. Permite administrar cuentas, registrar ingresos y gastos, transferir dinero entre cuentas propias y explorar la actividad en un dashboard con filtros y comparaciones entre períodos.
 
-Este README es la referencia principal del proyecto para desarrolladores, revisores y asistentes de IA.
+**[Probar la aplicación](https://pruebaserviciorn.site/)** · **Tecnologías:** React, TypeScript, Go, Gin y PostgreSQL.
 
-La versión publicada está disponible en: https://pruebaserviciorn.site/
+## Qué muestra este proyecto
+
+- Una aplicación completa: interfaz React, API REST en Go y persistencia en PostgreSQL.
+- Autenticación con JWT y datos separados por usuario.
+- Reglas de negocio para cuentas, movimientos y transferencias entre cuentas propias.
+- Visualización de saldos, tendencias y distribución de gastos por categoría.
+- Pruebas de servicios del backend y entorno local reproducible con Docker Compose.
+
+El proyecto está en desarrollo. Las secciones de inversiones y proyecciones todavía no tienen funcionalidad; más abajo se detallan otras limitaciones y próximos pasos.
+
+Para iniciarlo localmente en Windows: `.\scripts\start-local.cmd`. Para detenerlo: `.\scripts\stop-local.cmd`. La configuración completa está en [Desarrollo local](#desarrollo-local).
 
 ## Funcionalidades actuales
 
